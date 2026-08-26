@@ -1,0 +1,10 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "title": "Story 1 · The Platform", "x": 0, "y": 0, "w": 1080, "h": 1920 },
+    { "file": "Grow.dc.html", "title": "Story 2 · How We Grow", "x": 1200, "y": 0, "w": 1080, "h": 1920 },
+    { "file": "Roadmap.dc.html", "title": "Story 3 · Roadmap & Vision", "x": 2400, "y": 0, "w": 1080, "h": 1920 },
+    { "file": "Team.dc.html", "title": "Story 4 · The Team", "x": 3600, "y": 0, "w": 1080, "h": 1920 },
+    { "file": "Ask.dc.html", "title": "Story 5 · The Ask", "x": 4800, "y": 0, "w": 1080, "h": 1920 }
+  ],
+  "launch": { "view": "canvas" }
+}
