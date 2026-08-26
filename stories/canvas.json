@@ -1,17 +1,103 @@
 {
   "artboards": [
-    { "file": "Cover.dc.html", "title": "Story 01 · Cover", "x": 0, "y": 0, "w": 1080, "h": 1920 },
-    { "file": "Market.dc.html", "title": "Story 02 · The Market", "x": 1200, "y": 0, "w": 1080, "h": 1920 },
-    { "file": "Problem.dc.html", "title": "Story 03 · The Problem", "x": 2400, "y": 0, "w": 1080, "h": 1920 },
-    { "file": "WhatWeDo.dc.html", "title": "Story 04 · What We Do", "x": 3600, "y": 0, "w": 1080, "h": 1920 },
-    { "file": "Roster.dc.html", "title": "Story 05 · The Roster", "x": 4800, "y": 0, "w": 1080, "h": 1920 },
-    { "file": "Business.dc.html", "title": "Story 06 · The Business", "x": 6000, "y": 0, "w": 1080, "h": 1920 },
-    { "file": "Traction.dc.html", "title": "Story 07 · Traction & Financials", "x": 0, "y": 2160, "w": 1080, "h": 1920 },
-    { "file": "Main.dc.html", "title": "Story 08 · The Platform", "x": 1200, "y": 2160, "w": 1080, "h": 1920 },
-    { "file": "Grow.dc.html", "title": "Story 09 · How We Grow", "x": 2400, "y": 2160, "w": 1080, "h": 1920 },
-    { "file": "Roadmap.dc.html", "title": "Story 10 · Roadmap & Vision", "x": 3600, "y": 2160, "w": 1080, "h": 1920 },
-    { "file": "Team.dc.html", "title": "Story 11 · The Team", "x": 4800, "y": 2160, "w": 1080, "h": 1920 },
-    { "file": "Ask.dc.html", "title": "Story 12 · The Ask", "x": 6000, "y": 2160, "w": 1080, "h": 1920 }
+    {
+      "file": "Cover.dc.html",
+      "title": "Story 01 \u00b7 Cover",
+      "x": 0,
+      "y": 0,
+      "w": 1080,
+      "h": 1920
+    },
+    {
+      "file": "Business.dc.html",
+      "title": "Story 02 \u00b7 The Business",
+      "x": 1200,
+      "y": 0,
+      "w": 1080,
+      "h": 1920
+    },
+    {
+      "file": "Market.dc.html",
+      "title": "Story 03 \u00b7 The Market",
+      "x": 2400,
+      "y": 0,
+      "w": 1080,
+      "h": 1920
+    },
+    {
+      "file": "Problem.dc.html",
+      "title": "Story 04 \u00b7 The Problem",
+      "x": 3600,
+      "y": 0,
+      "w": 1080,
+      "h": 1920
+    },
+    {
+      "file": "WhatWeDo.dc.html",
+      "title": "Story 05 \u00b7 What We Do",
+      "x": 4800,
+      "y": 0,
+      "w": 1080,
+      "h": 1920
+    },
+    {
+      "file": "Roster.dc.html",
+      "title": "Story 06 \u00b7 The Ideal Customer Profile",
+      "x": 6000,
+      "y": 0,
+      "w": 1080,
+      "h": 1920
+    },
+    {
+      "file": "Traction.dc.html",
+      "title": "Story 07 \u00b7 Traction & Financials",
+      "x": 0,
+      "y": 2160,
+      "w": 1080,
+      "h": 1920
+    },
+    {
+      "file": "Main.dc.html",
+      "title": "Story 08 \u00b7 The Platform",
+      "x": 1200,
+      "y": 2160,
+      "w": 1080,
+      "h": 1920
+    },
+    {
+      "file": "Grow.dc.html",
+      "title": "Story 09 \u00b7 How We Grow",
+      "x": 2400,
+      "y": 2160,
+      "w": 1080,
+      "h": 1920
+    },
+    {
+      "file": "Roadmap.dc.html",
+      "title": "Story 10 \u00b7 Roadmap & Vision",
+      "x": 3600,
+      "y": 2160,
+      "w": 1080,
+      "h": 1920
+    },
+    {
+      "file": "Team.dc.html",
+      "title": "Story 11 \u00b7 The Team",
+      "x": 4800,
+      "y": 2160,
+      "w": 1080,
+      "h": 1920
+    },
+    {
+      "file": "Ask.dc.html",
+      "title": "Story 12 \u00b7 The Ask",
+      "x": 6000,
+      "y": 2160,
+      "w": 1080,
+      "h": 1920
+    }
   ],
-  "launch": { "view": "canvas" }
+  "launch": {
+    "view": "canvas"
+  }
 }
