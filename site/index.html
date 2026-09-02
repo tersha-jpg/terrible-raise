@@ -192,9 +192,7 @@
   .hero-shot figcaption .wrap { display: block; }
 
   /* ---- product demos ---- */
-  .demos { display: grid; gap: 18px; margin-top: 34px; }
-  @media (min-width: 900px) { .demos { grid-template-columns: repeat(2, 1fr); gap: 22px; } }
-  .demo { margin: 0; }
+  .demo { margin: 34px 0 0; }
   .demo-frame {
     position: relative; overflow: hidden; border-radius: 14px;
     background: var(--ink-lift); border: 1px solid var(--hair);
@@ -224,7 +222,7 @@
   }
   .demo-frame.playing .demo-live { opacity: 1; animation: demoPulse 2s ease-in-out infinite; }
   @keyframes demoPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.28; } }
-  .demo-vid { display: block; width: 100%; height: auto; aspect-ratio: 1440 / 1036; background: #0e0e0e; }
+  .demo-vid { display: block; width: 100%; height: auto; aspect-ratio: 1440 / 796; background: #0e0e0e; }
   .demo-play {
     position: absolute; inset: 38px 0 0 0; display: grid; place-items: center;
     border: 0; background: rgba(8, 8, 8, 0.34); color: var(--paper);
@@ -238,9 +236,9 @@
   }
   .demo-play:hover span { border-color: var(--blue); color: var(--blue-lift); }
   .demo-frame.playing .demo-play { opacity: 0; pointer-events: none; }
-  .demo figcaption { margin-top: 16px; }
+  .demo figcaption { margin-top: 18px; }
   .demo figcaption p { color: var(--muted); }
-  .demo figcaption .kicker + p { margin-top: 10px; font-size: 16px; }
+  .demo figcaption .kicker + p { margin-top: 10px; max-width: 76ch; }
   @media (prefers-reduced-motion: reduce) {
     .demo-frame, .demo-play { transition: none; }
     .demo-frame:hover, .demo-frame:focus-within { transform: none; }
@@ -706,52 +704,28 @@
       </div>
       <p class="lede rv">We built it because we needed it ourselves.</p>
 
-      <div class="demos rv">
-        <figure class="demo">
-          <div class="demo-frame">
-            <div class="demo-bar">
-              <span class="demo-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-              <span class="demo-route"><b>float</b> / at-show / dashboard</span>
-              <span class="demo-live" aria-hidden="true"></span>
-            </div>
-            <video class="demo-vid" playsinline muted loop preload="none"
-                   poster="assets/img/atshow-poster.jpg"
-                   width="1440" height="1036"
-                   data-mp4-lg="assets/video/atshow-1440.mp4"
-                   data-mp4-sm="assets/video/atshow-960.mp4"
-                   data-webm="assets/video/atshow-1440.webm"
-                   aria-label="Screen recording of the float At Show dashboard: gross, deductions and net for a tour leg, best night by net, live inventory, then the product catalogue."></video>
-            <button class="demo-play" type="button" aria-label="Play the At Show dashboard demo"><span>Play</span></button>
+      <figure class="demo rv">
+        <div class="demo-frame">
+          <div class="demo-bar">
+            <span class="demo-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="demo-route"><b>float</b> / at-show</span>
+            <span class="demo-live" aria-hidden="true"></span>
           </div>
-          <figcaption>
-            <p class="kicker">At Show — the tour dashboard</p>
-            <p>Gross, deductions and net for a live leg, best night by net, and remaining inventory in one view. Settlement figures the artist can see the same day.</p>
-          </figcaption>
-        </figure>
-
-        <figure class="demo">
-          <div class="demo-frame">
-            <div class="demo-bar">
-              <span class="demo-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-              <span class="demo-route"><b>float</b> / at-show / products / inventory</span>
-              <span class="demo-live" aria-hidden="true"></span>
-            </div>
-            <video class="demo-vid" playsinline muted loop preload="none"
-                   poster="assets/img/inventory-poster.jpg"
-                   width="1440" height="1036"
-                   data-mp4-lg="assets/video/inventory-1440.mp4"
-                   data-mp4-sm="assets/video/inventory-960.mp4"
-                   data-webm="assets/video/inventory-1440.webm"
-                   aria-label="Screen recording of float inventory: catalogue, per-variant stock levels with ordered, sold and adjusted counts, and stock orders."></video>
-            <button class="demo-play" type="button" aria-label="Play the inventory demo"><span>Play</span></button>
-          </div>
-          <figcaption>
-            <p class="kicker">Catalogue to stock orders</p>
-            <p>Every product, every variant, ordered against sold. The purchasing history that makes switching supplier cost more than any advance compensates for.</p>
-          </figcaption>
-        </figure>
-      </div>
-      <p class="note rv" style="margin-top: 14px;">Recorded in float on a live UK tour leg. Client account anonymised.</p>
+          <video class="demo-vid" playsinline muted loop preload="none"
+                 poster="assets/img/float-demo-poster.jpg"
+                 width="1440" height="796"
+                 data-mp4-lg="assets/video/float-demo-1440.mp4"
+                 data-mp4-sm="assets/video/float-demo-960.mp4"
+                 data-webm="assets/video/float-demo-1440.webm"
+                 aria-label="Screen recording of float: a tour dashboard with gross, deductions and net, best night and remaining inventory; a per-show settlement report; then the product catalogue and a product's variants."></video>
+          <button class="demo-play" type="button" aria-label="Play the float demo"><span>Play</span></button>
+        </div>
+        <figcaption>
+          <p class="kicker">One platform, end to end</p>
+          <p>A tour leg's gross, deductions and net; the best night and what is left in stock; settlement for a single show; then the catalogue down to a product's variants. Every screen is the same system, holding every transaction and every data point.</p>
+        </figcaption>
+      </figure>
+      <p class="note rv" style="margin-top: 14px;">Recorded in float on a demonstration account.</p>
 
       <div class="grid g2 rv" style="margin-top: 34px;">
         <div class="card">
