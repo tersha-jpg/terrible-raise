@@ -28,9 +28,14 @@ def data_uri(rel: str) -> str:
 def main() -> None:
     html = SRC.read_text()
 
+    # video is left out of the artifact: a base64 data URI cannot be range-
+    # requested, so it would defeat faststart and add megabytes to one page.
+    # The demos degrade to their poster stills instead.
+    html = re.sub(r'\s+data-(?:mp4-(?:lg|sm)|webm)="assets/video/[^"]*"', "", html)
+
     # font + images referenced as assets/...
     for rel in sorted({m for m in re.findall(r"assets/[\w./-]+", html)}):
-        if rel.endswith(".txt"):
+        if rel.endswith(".txt") or rel.endswith((".mp4", ".webm")):
             continue
         html = html.replace(f"'{rel}'", f"'{data_uri(rel)}'")
         html = html.replace(f'"{rel}"', f'"{data_uri(rel)}"')

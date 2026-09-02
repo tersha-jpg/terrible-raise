@@ -190,6 +190,63 @@
   .hero-shot img { width: 100%; height: clamp(280px, 52vh, 620px); object-fit: cover; object-position: center 32%; }
   .hero-shot figcaption { margin-top: 12px; }
   .hero-shot figcaption .wrap { display: block; }
+
+  /* ---- product demos ---- */
+  .demos { display: grid; gap: 18px; margin-top: 34px; }
+  @media (min-width: 900px) { .demos { grid-template-columns: repeat(2, 1fr); gap: 22px; } }
+  .demo { margin: 0; }
+  .demo-frame {
+    position: relative; overflow: hidden; border-radius: 14px;
+    background: var(--ink-lift); border: 1px solid var(--hair);
+    transition: border-color 0.4s ease, box-shadow 0.4s ease, transform 0.4s ease;
+  }
+  .demo-frame:hover, .demo-frame:focus-within {
+    border-color: var(--blue-dim);
+    box-shadow: 0 0 0 1px var(--blue-dim), 0 22px 60px -28px rgba(44, 102, 245, 0.45);
+    transform: translateY(-2px);
+  }
+  .demo-bar {
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 14px; height: 38px;
+    background: #101010; border-bottom: 1px solid var(--hair-soft);
+  }
+  .demo-dots { display: flex; gap: 6px; flex-shrink: 0; }
+  .demo-dots i { width: 9px; height: 9px; border-radius: 50%; background: #2f2f2f; }
+  .demo-route {
+    font-size: 12px; letter-spacing: 0.06em; color: var(--dim);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-variant-numeric: tabular-nums;
+  }
+  .demo-route b { color: var(--muted); font-weight: 500; }
+  .demo-live {
+    margin-left: auto; flex-shrink: 0; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--blue); opacity: 0; transition: opacity 0.3s ease;
+  }
+  .demo-frame.playing .demo-live { opacity: 1; animation: demoPulse 2s ease-in-out infinite; }
+  @keyframes demoPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.28; } }
+  .demo-vid { display: block; width: 100%; height: auto; aspect-ratio: 1440 / 1036; background: #0e0e0e; }
+  .demo-play {
+    position: absolute; inset: 38px 0 0 0; display: grid; place-items: center;
+    border: 0; background: rgba(8, 8, 8, 0.34); color: var(--paper);
+    font-family: var(--sans); font-size: 13px; font-weight: 600;
+    letter-spacing: 0.16em; text-transform: uppercase; cursor: pointer;
+    transition: opacity 0.3s ease; opacity: 1;
+  }
+  .demo-play span {
+    border: 1px solid rgba(244, 244, 241, 0.5); border-radius: 999px; padding: 11px 22px;
+    backdrop-filter: blur(3px);
+  }
+  .demo-play:hover span { border-color: var(--blue); color: var(--blue-lift); }
+  .demo-frame.playing .demo-play { opacity: 0; pointer-events: none; }
+  .demo figcaption { margin-top: 16px; }
+  .demo figcaption p { color: var(--muted); }
+  .demo figcaption .kicker + p { margin-top: 10px; font-size: 16px; }
+  @media (prefers-reduced-motion: reduce) {
+    .demo-frame, .demo-play { transition: none; }
+    .demo-frame:hover, .demo-frame:focus-within { transform: none; }
+    .demo-frame.playing .demo-live { animation: none; }
+  }
+
   .hero-ast {
     position: absolute; right: 2vw; top: 4vh; font-size: min(30vw, 340px);
     opacity: 0.05; pointer-events: none; z-index: 0;
@@ -648,6 +705,54 @@
         <span class="ast" aria-hidden="true">*</span>
       </div>
       <p class="lede rv">We built it because we needed it ourselves.</p>
+
+      <div class="demos rv">
+        <figure class="demo">
+          <div class="demo-frame">
+            <div class="demo-bar">
+              <span class="demo-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="demo-route"><b>float</b> / at-show / dashboard</span>
+              <span class="demo-live" aria-hidden="true"></span>
+            </div>
+            <video class="demo-vid" playsinline muted loop preload="none"
+                   poster="assets/img/atshow-poster.jpg"
+                   width="1440" height="1036"
+                   data-mp4-lg="assets/video/atshow-1440.mp4"
+                   data-mp4-sm="assets/video/atshow-960.mp4"
+                   data-webm="assets/video/atshow-1440.webm"
+                   aria-label="Screen recording of the float At Show dashboard: gross, deductions and net for a tour leg, best night by net, live inventory, then the product catalogue."></video>
+            <button class="demo-play" type="button" aria-label="Play the At Show dashboard demo"><span>Play</span></button>
+          </div>
+          <figcaption>
+            <p class="kicker">At Show — the tour dashboard</p>
+            <p>Gross, deductions and net for a live leg, best night by net, and remaining inventory in one view. Settlement figures the artist can see the same day.</p>
+          </figcaption>
+        </figure>
+
+        <figure class="demo">
+          <div class="demo-frame">
+            <div class="demo-bar">
+              <span class="demo-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="demo-route"><b>float</b> / at-show / products / inventory</span>
+              <span class="demo-live" aria-hidden="true"></span>
+            </div>
+            <video class="demo-vid" playsinline muted loop preload="none"
+                   poster="assets/img/inventory-poster.jpg"
+                   width="1440" height="1036"
+                   data-mp4-lg="assets/video/inventory-1440.mp4"
+                   data-mp4-sm="assets/video/inventory-960.mp4"
+                   data-webm="assets/video/inventory-1440.webm"
+                   aria-label="Screen recording of float inventory: catalogue, per-variant stock levels with ordered, sold and adjusted counts, and stock orders."></video>
+            <button class="demo-play" type="button" aria-label="Play the inventory demo"><span>Play</span></button>
+          </div>
+          <figcaption>
+            <p class="kicker">Catalogue to stock orders</p>
+            <p>Every product, every variant, ordered against sold. The purchasing history that makes switching supplier cost more than any advance compensates for.</p>
+          </figcaption>
+        </figure>
+      </div>
+      <p class="note rv" style="margin-top: 14px;">Recorded in float. Figures shown are from a live UK tour leg.</p>
+
       <div class="grid g2 rv" style="margin-top: 34px;">
         <div class="card">
           <p class="kicker">Every transaction</p>
@@ -969,6 +1074,79 @@
       }, { rootMargin: '0px 0px -12% 0px', threshold: 0.12 });
       reveals.forEach(function (el) { io.observe(el); });
     }
+
+    // product demos: load on approach, play while in view, pause when not
+    (function demos() {
+      var vids = Array.prototype.slice.call(document.querySelectorAll('.demo-vid'));
+      if (!vids.length) return;
+
+      // H.264 first (hardware decode nearly everywhere, kinder on battery),
+      // VP9 for Chromium builds shipped without proprietary codecs.
+      var probe = document.createElement('video');
+      var h264 = !!probe.canPlayType('video/mp4; codecs="avc1.640028"');
+
+      function pick(v) {
+        var d = v.dataset;
+        if (h264 && (d.mp4Lg || d.mp4Sm)) {
+          var wide = Math.min(window.innerWidth, window.screen.width) *
+                     (window.devicePixelRatio || 1) > 1100;
+          return (wide ? d.mp4Lg : d.mp4Sm) || d.mp4Lg || d.mp4Sm;
+        }
+        return d.webm || d.mp4Lg || d.mp4Sm || '';
+      }
+
+      function load(v) {
+        if (v.dataset.loaded) return;
+        var src = pick(v);
+        if (!src) return;
+        v.src = src;
+        v.dataset.loaded = '1';
+      }
+
+      function play(v) {
+        load(v);
+        var p = v.play();
+        if (p && p.catch) p.catch(function () { /* blocked; play button stays */ });
+      }
+
+      // the artifact build strips the sources; those demos stay poster stills
+      vids = vids.filter(function (v) {
+        if (pick(v)) return true;
+        var btn = v.closest('.demo-frame').querySelector('.demo-play');
+        if (btn) btn.remove();
+        return false;
+      });
+      if (!vids.length) return;
+
+      vids.forEach(function (v) {
+        var frame = v.closest('.demo-frame');
+        v.addEventListener('playing', function () { frame.classList.add('playing'); });
+        v.addEventListener('pause', function () { frame.classList.remove('playing'); });
+        frame.querySelector('.demo-play').addEventListener('click', function () {
+          v.paused ? play(v) : v.pause();
+        });
+      });
+
+      if (reduce || !('IntersectionObserver' in window)) return; // poster + Play button only
+
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          var v = e.target;
+          if (e.isIntersecting) { play(v); } else if (!v.paused) { v.pause(); }
+        });
+      }, { threshold: 0.4 });
+      vids.forEach(function (v) { io.observe(v); });
+
+      // warm the file just before it scrolls in
+      var pre = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          load(e.target);
+          pre.unobserve(e.target);
+        });
+      }, { rootMargin: '400px 0px' });
+      vids.forEach(function (v) { pre.observe(v); });
+    }());
 
     // active nav item
     var links = Array.prototype.slice.call(document.querySelectorAll('#nav a'));
