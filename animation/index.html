@@ -299,7 +299,7 @@
     { t0: 11.2, dur: 3.2, x: 590,  y: 812, tag: 'reorder',
       body: 'Tee restock raised 11 days early' },
     { t0: 12.9, dur: 3.2, x: 1330, y: 812, tag: 'sequencing',
-      body: 'Two consignments, one dock, spaced 40 mins' },
+      body: 'Two consignments, one landing slot, spaced 40 mins' },
     { t0: 15.9, dur: 3.2, x: 590,  y: 252, tag: 'reallocation',
       body: '400 units held back from Glasgow, sent to Leeds' },
     { t0: 17.9, dur: 2.6, x: 1330, y: 812, tag: 'settlement',
@@ -314,15 +314,15 @@
       head: 'Air traffic control\nfor merchandise.',
       sub: 'One airspace, every cost, every shipment, every transaction, every process in one place.' },
     { t0: 12.8, t1: 19.9, kicker: 'float ai',
-      head: 'It does not just watch.\nIt routes.',
-      sub: 'Demand read live, stock moved before it strands, dockings sequenced.' },
+      head: 'float doesn\u2019t just watch,\nit routes and reacts.',
+      sub: 'Real time demand and supply, real time tracking, real time reports.' },
     { t0: 20.9, t1: 24.0, kicker: 'after',
       head: 'Every transaction.\nEvery data point. One tower.',
       sub: 'The same complexity, run by one team, on one board.' }
   ];
 
   const STATS = [
-    { label: 'jobs routed',        to: 1284, suffix: '' },
+    { label: 'drops routed',       to: 1284, suffix: '' },
     { label: 'units moved',        to: 41600, suffix: '' },
     { label: 'stockouts avoided',  to: 37,   suffix: '' },
     { label: 'touched by hand',    to: 0,    suffix: '' }
@@ -633,7 +633,7 @@
       const label = mix > 0.5 ? n.label.toUpperCase() : n.label;
       const w = trackedWidth(label, sp);
       const x = lerp(p.x - w/2, p.x + 20, mix);
-      // float reaching out and pulling each job onto the board
+      // float reaching out and pulling each drop onto the board
       if (mix > 0.04 && mix < 0.96){
         ctx.save();
         ctx.globalAlpha = GA * Math.sin(mix * Math.PI) * 0.75;
@@ -655,7 +655,7 @@
         }
         ctx.font = F.reg(12); ctx.textAlign = 'right';
         ctx.fillStyle = lit ? C.blue2 : 'rgba(150,150,143,0.55)';
-        ctx.fillText(state === 'out' ? 'departed' : state === 'in' ? 'cleared' : 'nominal',
+        ctx.fillText(state === 'out' ? 'departed' : state === 'in' ? 'landed' : 'nominal',
                      n.px + n.pw, p.y);
         ctx.textAlign = 'left';
         ctx.globalAlpha = GA;
