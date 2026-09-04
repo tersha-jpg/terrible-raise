@@ -38,6 +38,21 @@ MP4, with no screen recorder and no dropped frames:
 pip install playwright && python3 animation/make-video.py        # -> animation/dist/float-atc.mp4
 ```
 
+## Slides
+
+`make-slides.py` seeks the animation to the seven moments that carry the argument and
+captures each at 1920x1080, so the deck is the same artwork as the film rather than a
+redraw of it. It writes PNG masters, a PPTX with a speaker note on every slide, and a PDF:
+
+```sh
+pip install playwright python-pptx pillow
+python3 animation/make-slides.py     # -> animation/dist/float-atc-slides.{pptx,pdf} + dist/slides/
+```
+
+The slide list, the moment each one freezes and its speaker note all live in `SLIDES` at
+the top of that script. Slides are full-bleed images, so wording changes belong in
+`index.html` and come through on the next run.
+
 ## Single file
 
 ```sh
