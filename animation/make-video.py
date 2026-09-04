@@ -5,7 +5,8 @@ Deterministic: each frame is drawn by seeking the timeline, not by recording pla
 so nothing drops and the file is identical every run.
 
     pip install playwright
-    python3 animation/make-video.py [--fps 30] [--width 1920] [--out animation/dist/float-atc.mp4]
+    python3 animation/make-video.py [--fps 30] [--width 1920] [--crf 18]
+                                    [--out animation/dist/float-atc.mp4]
 """
 import argparse
 import base64
@@ -53,6 +54,7 @@ def main() -> None:
     ap.add_argument("--width", type=int, default=1920)
     ap.add_argument("--out", default=str(HERE / "dist" / "float-atc.mp4"))
     ap.add_argument("--frames", default=None, help="where to keep the rendered frames")
+    ap.add_argument("--crf", type=int, default=18, help="x264 quality, lower is better")
     ap.add_argument("--encode-only", action="store_true",
                     help="skip rendering and encode the frames already on disk")
     args = ap.parse_args()
@@ -102,7 +104,8 @@ def main() -> None:
     subprocess.run([ffmpeg, "-y", "-framerate", str(args.fps),
                     "-i", str(frames_dir / "f%05d.jpg"),
                     "-c:v", "libx264", "-pix_fmt", "yuv420p",
-                    "-crf", "18", "-preset", "slow",
+                    "-crf", str(args.crf), "-preset", "slow",
+                    "-movflags", "+faststart",
                     "-vf", f"scale={args.width}:{height}", str(out)],
                    check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     server.shutdown()

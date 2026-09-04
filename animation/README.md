@@ -32,11 +32,58 @@ and every playback is identical.
 ## Recording it
 
 `make-video.py` renders the timeline frame by frame in headless Chromium and encodes an
-MP4, with no screen recorder and no dropped frames:
+MP4, with no screen recorder and no dropped frames. Everything is drawn from vectors and
+text, so resolution is a flag rather than an upscale:
 
 ```sh
-pip install playwright && python3 animation/make-video.py        # -> animation/dist/float-atc.mp4
+pip install playwright
+python3 animation/make-video.py                                    # 1920x1080 master
+python3 animation/make-video.py --width 3840 --crf 18 \
+        --out animation/dist/float-atc-4k.mp4                      # 4K master
+python3 animation/make-video.py --width 1920 --crf 22 \
+        --out animation/dist/float-atc-web.mp4                     # smaller, for a page
 ```
+
+4K takes roughly 20 minutes and lands near 31 MB; 1080p takes about 4 and lands near
+10 MB. `--fps` defaults to 30. Frames are kept in `dist/frames`, so `--encode-only`
+re-encodes without re-rendering.
+
+## Putting it on a website
+
+Two ways, depending on whether the page should run the animation or play a file.
+
+**The live animation**, sharp at any size, one 160 KB file, no video:
+
+```sh
+python3 animation/build-artifact.py --embed        # -> animation/dist/embed.html
+```
+
+Upload that single file, then point an iframe at it:
+
+```html
+<iframe src="/float/embed.html"
+        title="float, air traffic control for merchandise"
+        loading="lazy"
+        style="width:100%; aspect-ratio:16/9; border:0; display:block"></iframe>
+```
+
+It fills whatever box you give it, autoplays, loops, and holds still on the after board
+for anyone browsing with reduced motion turned on.
+
+**The video**, lighter on the viewer's machine and safe in every email client and CMS:
+
+```html
+<video autoplay muted loop playsinline preload="metadata"
+       poster="float-atc-poster.jpg"
+       style="width:100%; height:auto; display:block"
+       aria-label="float, air traffic control for merchandise">
+  <source src="float-atc-web.mp4" type="video/mp4">
+</video>
+```
+
+All four of `autoplay muted loop playsinline` are needed, or iOS refuses to start it.
+The web cut is encoded with `+faststart` so it begins playing before it has finished
+downloading.
 
 ## Slides
 
