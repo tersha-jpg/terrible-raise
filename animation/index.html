@@ -318,7 +318,7 @@
       sub: 'Real time demand and supply, real time tracking, real time reports.' },
     { t0: 20.9, t1: 24.0, kicker: 'after',
       head: 'Every transaction.\nEvery data point. One tower.',
-      sub: 'The same complexity, run by one team, on one board.' }
+      sub: 'The same complexity, run by one team, on one platform.' }
   ];
 
   const STATS = [
@@ -774,10 +774,10 @@
 
   /* ------------------------------------------------------------------- board */
   const CHIPS = [
-    { key:'make',   n:'16 partners', line:'artwork, licensing, production' },
-    { key:'move',   n:'8 systems',   line:'stock, freight, venue door' },
-    { key:'sell',   n:'6 channels',  line:'D2C, retail, tour, popup' },
-    { key:'settle', n:'5 ledgers',   line:'splits, tax, payouts' }
+    { key:'make',   n:'176 partners', line:'artwork, production' },
+    { key:'move',   n:'8 systems',    line:'stock, freight, warehouse, venue door' },
+    { key:'sell',   n:'4 channels',   line:'D2C, retail, tour, popups' },
+    { key:'settle', n:'5 ledgers',    line:'splits, taxes, costs, payouts' }
   ];
   function drawBoard(t){
     const a = inv(t, T.board + 0.3, T.board + 1.2) * (1 - inv(t, T.end - 0.5, T.end));
@@ -830,7 +830,7 @@
       ctx.beginPath(); ctx.arc(px, spineY, 3.6, 0, TAU); ctx.fill();
     }
     ctx.font = F.reg(15); ctx.fillStyle = C.dim;
-    const flow = 'ONE FLOW · ARTWORK TO PAYOUT · NOTHING RE-KEYED';
+    const flow = 'ONE FLOW · ARTWORK APPROVAL TO PAYOUT';
     tracked(flow, W/2 - trackedWidth(flow, 3.2)/2, spineY + 44, 3.2);
     ctx.restore();
   }
