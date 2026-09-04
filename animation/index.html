@@ -1,0 +1,955 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>float by terrible* — air traffic control for merch</title>
+<meta name="description" content="An animation: the tangle of merch suppliers, systems and handoffs, resolved into one controlled airspace by float.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 fill=%27%230b0b0b%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%279%27 fill=%27none%27 stroke=%27%232c66f5%27 stroke-width=%272%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%272.5%27 fill=%27%23f4f4f1%27/%3E%3C/svg%3E">
+<style>
+  @font-face {
+    font-family: 'Archivo';
+    src: url('assets/archivo-var.woff2') format('woff2');
+    font-weight: 100 900; font-style: normal; font-display: block;
+  }
+  @font-face {
+    font-family: 'HelveticaNowText';
+    src: url('assets/helvetica-now-text.woff2') format('woff2');
+    font-weight: normal; font-style: normal; font-display: block;
+  }
+  :root {
+    --ink: #0b0b0b; --paper: #f4f4f1; --grey: #96968f; --blue: #2c66f5; --line: #262626;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: #050505; color: var(--paper);
+    font-family: Archivo, Helvetica, Arial, sans-serif;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 18px; padding: 22px;
+  }
+  #stage {
+    position: relative; width: 100%; max-width: 1600px; aspect-ratio: 16 / 9;
+    background: var(--ink); box-shadow: 0 30px 90px rgba(0,0,0,.6);
+  }
+  #stage canvas { display: block; width: 100%; height: 100%; }
+  #controls {
+    width: 100%; max-width: 1600px; display: flex; align-items: center; gap: 14px;
+    font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--grey);
+  }
+  button {
+    font: inherit; letter-spacing: .1em; text-transform: uppercase;
+    background: #141414; color: var(--paper); border: 1px solid #2e2e2e;
+    padding: 9px 16px; cursor: pointer;
+  }
+  button:hover { border-color: var(--blue); color: var(--blue); }
+  input[type=range] { flex: 1; accent-color: var(--blue); height: 4px; cursor: pointer; }
+  #clock { font-variant-numeric: tabular-nums; min-width: 92px; text-align: right; color: var(--paper); }
+  label.chk { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  select { font: inherit; background: #141414; color: var(--paper); border: 1px solid #2e2e2e; padding: 8px 10px; }
+  #hint { max-width: 1600px; width: 100%; font-size: 12px; color: #5f5f5b; letter-spacing: .04em; }
+  body.clean #controls, body.clean #hint { display: none; }
+  body.clean { padding: 0; background: var(--ink); }
+  body.clean #stage { max-width: none; height: 100vh; width: 100vw; box-shadow: none; }
+</style>
+</head>
+<body>
+  <div id="stage"><canvas id="c"></canvas></div>
+  <div id="controls">
+    <button id="play">Pause</button>
+    <button id="restart">Restart</button>
+    <input id="scrub" type="range" min="0" max="1000" value="0" step="1" aria-label="Scrub timeline">
+    <span id="clock">00.0 / 00.0</span>
+    <select id="speed" aria-label="Playback speed">
+      <option value="0.5">0.5×</option>
+      <option value="1" selected>1×</option>
+      <option value="1.5">1.5×</option>
+    </select>
+    <label class="chk"><input id="loop" type="checkbox" checked> Loop</label>
+  </div>
+  <div id="hint">Space play/pause · ← → scrub 1s · R restart · F full-frame (hides these controls, for screen recording)</div>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ---------------------------------------------------------------- basics */
+  const W = 1920, H = 1080;
+  const CX = 952, CY = 512, R_SCOPE = 272;
+  const C = {
+    ink:'#0b0b0b', paper:'#f4f4f1', grey:'#96968f', dim:'#4a4a46',
+    blue:'#2c66f5', blue2:'#6b93f8', amber:'#e0a33a', red:'#d1483c', line:'#262626'
+  };
+
+  const clamp = (v,a,b) => v<a?a:v>b?b:v;
+  const lerp  = (a,b,t) => a + (b-a)*t;
+  const inv   = (t,a,b) => clamp((t-a)/(b-a), 0, 1);
+  const eio   = t => t<0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
+  const eo    = t => 1 - Math.pow(1-t, 3);
+  const ei    = t => t*t*t;
+  const TAU   = Math.PI * 2;
+
+  function mulberry32(a){ return function(){ a|=0; a = a+0x6D2B79F5|0;
+    let t = Math.imul(a ^ a>>>15, 1|a); t = t + Math.imul(t ^ t>>>7, 61|t) ^ t;
+    return ((t ^ t>>>14) >>> 0) / 4294967296; }; }
+
+  /* --------------------------------------------------------------- timeline */
+  const T = {
+    chaos: 0.0,     // the tangle
+    tidy:  5.4,     // labels start flying into order
+    scope: 8.2,     // scope + tower fade up
+    flow:  9.4,     // routed traffic begins
+    hold: 13.0,     // the sequencing beat
+    surge:16.2,     // full throughput
+    board:20.8,     // collapse to one board
+    end:  24.4,     // end card
+    loop: 28.2
+  };
+
+  /* ------------------------------------------------------------------ nodes */
+  const NODE_DATA = [
+    ['printers','make'], ['embroidery','make'], ['cut and sew','make'], ['dye houses','make'],
+    ['blanks suppliers','make'], ['ceramics','make'], ['paper','make'], ['metalwork','make'],
+    ['records','make'], ['cds','make'], ['digital','make'], ['design','make'],
+    ['artwork','make'], ['assets','make'], ['licenses','make'], ['chart registration','make'],
+    ['inventory','move'], ['pick/pack','move'], ['QC','move'], ['barcode','move'],
+    ['storage','move'], ['shipping','move'], ['returns','move'], ['logistics','move'],
+    ['D2C','sell'], ['retail','sell'], ['shows','sell'], ['venues','sell'],
+    ['popups','sell'], ['concessions','sell'],
+    ['payments','settle'], ['taxes','settle'], ['payouts','settle'],
+    ['reports','settle'], ['accounts','settle']
+  ];
+
+  const SECTORS = {
+    make:   { label:'make',   side:'L', note:'suppliers · production' },
+    move:   { label:'move',   side:'R', note:'warehouse · freight' },
+    sell:   { label:'sell',   side:'R', note:'channels · tour' },
+    settle: { label:'settle', side:'R', note:'money · reporting' }
+  };
+
+  const nodes = NODE_DATA.map(([label, sector], i) => ({ i, label, sector, side: SECTORS[sector].side }));
+  const byIdx = s => nodes.filter(n => n.sector === s).map(n => n.i);
+
+  /* ------------------------------------------------------------------ canvas */
+  const cv  = document.getElementById('c');
+  const ctx = cv.getContext('2d');
+  let dpr = 1;
+  function resize(){
+    const r = cv.parentElement.getBoundingClientRect();
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width  = Math.round(r.width * dpr);
+    cv.height = Math.round(r.height * dpr);
+  }
+  window.addEventListener('resize', resize);
+
+  function frame(){ // set transform so we can draw in 1920x1080 space
+    ctx.setTransform(1,0,0,1,0,0);
+    const s = Math.min(cv.width / W, cv.height / H);
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ctx.setTransform(s, 0, 0, s, (cv.width - W*s)/2, (cv.height - H*s)/2);
+  }
+
+  /* -------------------------------------------------------------- typography */
+  const F = {
+    display: n => `normal ${n}px HelveticaNowText, Archivo, Helvetica, Arial, sans-serif`,
+    black:   n => `900 ${n}px Archivo, "Arial Black", Helvetica, Arial, sans-serif`,
+    bold:    n => `700 ${n}px Archivo, Helvetica, Arial, sans-serif`,
+    semi:    n => `600 ${n}px Archivo, Helvetica, Arial, sans-serif`,
+    reg:     n => `400 ${n}px Archivo, Helvetica, Arial, sans-serif`
+  };
+  function tracked(text, x, y, sp){ // letter-spaced text (canvas has no letterSpacing everywhere)
+    let cx = x;
+    for (const ch of text){ ctx.fillText(ch, cx, y); cx += ctx.measureText(ch).width + sp; }
+    return cx - x - sp;
+  }
+  function trackedWidth(text, sp){
+    let w = 0; for (const ch of text) w += ctx.measureText(ch).width + sp;
+    return w - sp;
+  }
+
+  /* ------------------------------------------------------------------ layout */
+  const rnd = mulberry32(20260904);
+
+  // strip (flight-progress) columns
+  const PANEL = {
+    L: { x: 96,   w: 336, align:'left'  },
+    R: { x: 1488, w: 336, align:'left'  }
+  };
+  const ROW_H = 27, HEAD_GAP = 40;
+
+  (function layoutStrips(){
+    let y = 250;
+    for (const i of byIdx('make')) { nodes[i].sy = y += ROW_H; }
+    nodes[byIdx('make')[0]].groupTop = 250;
+
+    y = 250;
+    for (const key of ['move','sell','settle']) {
+      const idxs = byIdx(key);
+      nodes[idxs[0]].groupTop = y;
+      for (const i of idxs) { nodes[i].sy = y += ROW_H; }
+      y += HEAD_GAP - ROW_H + ROW_H; // gap before next group header
+    }
+    for (const n of nodes) {
+      const p = PANEL[n.side];
+      n.sx = p.x;
+      n.px = p.x; n.pw = p.w;
+    }
+  })();
+
+  // blip angles around the scope, ordered top-to-bottom to match the strips
+  (function layoutBlips(){
+    const L = nodes.filter(n => n.side==='L').sort((a,b)=>a.sy-b.sy);
+    const R = nodes.filter(n => n.side==='R').sort((a,b)=>a.sy-b.sy);
+    L.forEach((n,i) => { n.ang = (260 - i * (160/(L.length-1))) * Math.PI/180; });
+    R.forEach((n,i) => { n.ang = (-80 + i * (160/(R.length-1))) * Math.PI/180; });
+    for (const n of nodes) {
+      n.bx = CX + Math.cos(n.ang) * R_SCOPE;
+      n.by = CY + Math.sin(n.ang) * R_SCOPE;
+    }
+  })();
+
+  // scattered "before" positions — the tangle
+  (function layoutChaos(){
+    for (const n of nodes) {
+      const a = rnd() * TAU, r = Math.sqrt(rnd());
+      n.cx0 = CX + Math.cos(a) * r * 760 + (rnd()-0.5) * 60;
+      n.cy0 = CY + Math.sin(a) * r * 330 + (rnd()-0.5) * 60;
+      n.jit = rnd() * TAU;
+      n.jitS = 0.5 + rnd() * 0.9;
+    }
+    // crude relaxation so labels do not stack
+    for (let pass = 0; pass < 260; pass++) {
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i+1; j < nodes.length; j++) {
+          const a = nodes[i], b = nodes[j];
+          const dx = b.cx0 - a.cx0, dy = (b.cy0 - a.cy0) * 2.6;
+          const d = Math.hypot(dx, dy) || 0.001;
+          const min = 140;
+          if (d < min) {
+            const push = (min - d) / d * 0.5;
+            a.cx0 -= dx * push * 0.5; a.cy0 -= dy * push * 0.2;
+            b.cx0 += dx * push * 0.5; b.cy0 += dy * push * 0.2;
+          }
+        }
+      }
+    }
+    for (const n of nodes) {
+      n.cx0 = clamp(n.cx0, 150, 1770);
+      n.cy0 = clamp(n.cy0, 196, 812);
+    }
+  })();
+
+  // the tangle: dotted links between unrelated nodes, the handoffs nobody sees
+  const links = (() => {
+    const out = [];
+    for (let k = 0; k < 70; k++) {
+      const a = Math.floor(rnd() * nodes.length);
+      let b = Math.floor(rnd() * nodes.length);
+      if (b === a) b = (b + 7) % nodes.length;
+      const bow = (rnd() - 0.5) * 900;
+      out.push({ a, b, bow, ph: rnd(), sp: 0.10 + rnd() * 0.22, stallPh: rnd() * TAU });
+    }
+    return out;
+  })();
+
+  // long sweeping arcs over the whole cloud
+  const orbits = (() => {
+    const r = mulberry32(4242), out = [];
+    for (let k = 0; k < 16; k++){
+      out.push({
+        rx: 520 + r() * 620, ry: 190 + r() * 300,
+        rot: (r() - 0.5) * 0.7,
+        a0: r() * TAU, a1: 0, dx: (r() - 0.5) * 420, dy: (r() - 0.5) * 200
+      });
+      out[out.length-1].a1 = out[out.length-1].a0 + 1.6 + r() * 3.4;
+    }
+    return out;
+  })();
+
+  /* ------------------------------------------------------------- flight plan */
+  // deterministic schedule: strip -> scope -> tower -> scope -> strip
+  const flights = (() => {
+    const r = mulberry32(77123);
+    const src = [...byIdx('make'), ...byIdx('make'), ...byIdx('move')];
+    const dst = [...byIdx('move'), ...byIdx('sell'), ...byIdx('sell'), ...byIdx('settle')];
+    const out = [];
+    const span = T.board - 0.9 - T.flow;
+    const n = 96;
+    for (let k = 0; k < n; k++) {
+      const dep = T.flow + (k / n) * span + r() * 0.16;
+      out.push({
+        src: src[Math.floor(r() * src.length)],
+        dst: dst[Math.floor(r() * dst.length)],
+        dep, legIn: 1.15, hold: 0, legOut: 1.15,
+        wob: (r() - 0.5) * 60
+      });
+    }
+    // the sequencing beat — two shipments arrive on the same slot, one is held
+    out.push({ src: nodes.findIndex(n=>n.label==='shipping'), dst: nodes.findIndex(n=>n.label==='retail'),
+               dep: T.hold - 1.2, legIn: 1.2, hold: 0.0, legOut: 1.2, wob: 0, star: true });
+    out.push({ src: nodes.findIndex(n=>n.label==='records'), dst: nodes.findIndex(n=>n.label==='D2C'),
+               dep: T.hold - 1.25, legIn: 1.2, hold: 1.5, legOut: 1.2, wob: 0, star: true, held: true });
+    return out;
+  })();
+
+  /* ------------------------------------------------------------ float ai bits */
+  const CALLOUTS = [
+    { t0: 9.4,  dur: 3.0, x: 1330, y: 252, tag: 'demand signal',
+      body: 'Manchester sell-through 92% at 40 mins' },
+    { t0: 11.2, dur: 3.2, x: 590,  y: 812, tag: 'reorder',
+      body: 'Tee restock raised 11 days early' },
+    { t0: 12.9, dur: 3.2, x: 1330, y: 812, tag: 'sequencing',
+      body: 'Two consignments, one dock — spaced 40 mins' },
+    { t0: 15.9, dur: 3.2, x: 590,  y: 252, tag: 'reallocation',
+      body: '400 units held back from Glasgow, sent to Leeds' },
+    { t0: 17.9, dur: 2.6, x: 1330, y: 812, tag: 'settlement',
+      body: 'Venue split matched, payout queued' }
+  ];
+
+  const CAPTIONS = [
+    { t0: 0.4,  t1: 6.0,  kicker: 'before',
+      head: 'Forty suppliers. Six systems.\nOne spreadsheet.',
+      sub: 'Every merch programme is a pile of handoffs nobody can see.' },
+    { t0: 6.4,  t1: 12.4, kicker: 'float by terrible*',
+      head: 'Air traffic control\nfor merchandise.',
+      sub: 'One airspace. Every job on the scope, from artwork to payout.' },
+    { t0: 12.8, t1: 19.9, kicker: 'float ai',
+      head: 'It does not just watch.\nIt routes.',
+      sub: 'Demand read live, stock moved before it strands, dockings sequenced.' },
+    { t0: 20.9, t1: 24.0, kicker: 'after',
+      head: 'Every transaction.\nEvery data point. One tower.',
+      sub: 'The same complexity — run by one team, on one board.' }
+  ];
+
+  const STATS = [
+    { label: 'jobs routed',        to: 1284, suffix: '' },
+    { label: 'units moved',        to: 41600, suffix: '' },
+    { label: 'stockouts avoided',  to: 37,   suffix: '' },
+    { label: 'touched by hand',    to: 0,    suffix: '' }
+  ];
+
+  /* -------------------------------------------------------------- background */
+  const grain = (() => {
+    const g = document.createElement('canvas'); g.width = g.height = 220;
+    const gx = g.getContext('2d'), img = gx.createImageData(220,220), d = img.data;
+    const r = mulberry32(9182);
+    for (let i = 0; i < d.length; i += 4) {
+      const v = 120 + r() * 135;
+      d[i] = d[i+1] = d[i+2] = v; d[i+3] = 18;
+    }
+    gx.putImageData(img, 0, 0);
+    return g;
+  })();
+  let grainPat = null;
+
+  function drawBackground(t){
+    ctx.fillStyle = C.ink; ctx.fillRect(0,0,W,H);
+    const g = ctx.createRadialGradient(CX, CY*0.6, 60, CX, CY, 1250);
+    g.addColorStop(0, '#191919'); g.addColorStop(0.62, '#0c0c0c'); g.addColorStop(1, '#070707');
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+    if (!grainPat) grainPat = ctx.createPattern(grain, 'repeat');
+    ctx.globalAlpha = 0.55; ctx.fillStyle = grainPat; ctx.fillRect(0,0,W,H); ctx.globalAlpha = 1;
+  }
+
+  /* ----------------------------------------------------------------- helpers */
+  function qbez(x0,y0,x1,y1,x2,y2,u){
+    const m = 1-u;
+    return [ m*m*x0 + 2*m*u*x1 + u*u*x2, m*m*y0 + 2*m*u*y1 + u*u*y2 ];
+  }
+  function roundRect(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+  }
+  const fmt = n => Math.round(n).toLocaleString('en-GB');
+
+  // where a node's label sits at time t (chaos -> flight strip)
+  function nodePos(n, t){
+    const mix = eio(inv(t, T.tidy + (n.i / nodes.length) * 1.4, T.scope + 0.15));
+    const jx = n.cx0 + Math.sin(t * n.jitS + n.jit) * 7 * (1-mix);
+    const jy = n.cy0 + Math.cos(t * n.jitS * 0.8 + n.jit) * 6 * (1-mix);
+    const arc = Math.sin(mix * Math.PI) * (n.side === 'L' ? -60 : 60);
+    return { x: lerp(jx, n.sx, mix) + arc * 0.35, y: lerp(jy, n.sy, mix), mix };
+  }
+
+  /* ------------------------------------------------------------- the tangle */
+  function drawTangle(t, a){
+    if (a <= 0.01) return;
+    ctx.save();
+    ctx.lineWidth = 1.1; ctx.setLineDash([2, 7]);
+    ctx.strokeStyle = `rgba(44,102,245,${0.34 * a})`;
+    for (const o of orbits){
+      ctx.save();
+      ctx.translate(CX + o.dx, CY + o.dy); ctx.rotate(o.rot);
+      ctx.beginPath(); ctx.ellipse(0, 0, o.rx, o.ry, 0, o.a0, o.a1); ctx.stroke();
+      ctx.restore();
+    }
+    ctx.lineWidth = 1.25; ctx.setLineDash([2, 6]);
+    for (const L of links){
+      const A = nodePos(nodes[L.a], t), B = nodePos(nodes[L.b], t);
+      const mx = (A.x + B.x)/2, my = (A.y + B.y)/2 + L.bow * 0.35;
+      ctx.strokeStyle = `rgba(44,102,245,${0.6 * a})`;
+      ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.quadraticCurveTo(mx, my, B.x, B.y); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    // packets stuttering along the handoffs, some stalled
+    for (const L of links){
+      const A = nodePos(nodes[L.a], t), B = nodePos(nodes[L.b], t);
+      const mx = (A.x + B.x)/2, my = (A.y + B.y)/2 + L.bow * 0.35;
+      const stall = Math.sin(t * 0.9 + L.stallPh) > 0.72;
+      const u = ((L.ph + t * L.sp * (stall ? 0.06 : 1)) % 1);
+      const [px, py] = qbez(A.x,A.y, mx,my, B.x,B.y, u);
+      ctx.fillStyle = stall ? `rgba(224,163,58,${0.95*a})` : `rgba(244,244,241,${0.62*a})`;
+      ctx.fillRect(px-2.5, py-2.5, 5, 5);
+      if (stall){
+        ctx.strokeStyle = `rgba(224,163,58,${0.35*a})`; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(px, py, 7 + Math.sin(t*6)*1.6, 0, TAU); ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  /* -------------------------------------------------------------- the scope */
+  function drawClaim(t){
+    for (let k = 0; k < 3; k++){
+      const u = inv(t, T.tidy + k * 0.34, T.tidy + k * 0.34 + 1.5);
+      if (u <= 0 || u >= 1) continue;
+      ctx.save();
+      ctx.strokeStyle = `rgba(44,102,245,${0.5 * (1 - u)})`;
+      ctx.lineWidth = 2 - u;
+      ctx.beginPath(); ctx.arc(CX, CY, eo(u) * R_SCOPE * 2.6, 0, TAU); ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function drawScope(t, a){
+    if (a <= 0.01) return;
+    ctx.save();
+    ctx.globalAlpha = a;
+
+    // rings
+    ctx.strokeStyle = 'rgba(244,244,241,0.10)'; ctx.lineWidth = 1;
+    for (const r of [R_SCOPE, R_SCOPE*0.66, R_SCOPE*0.33]){
+      ctx.beginPath(); ctx.arc(CX, CY, r, 0, TAU); ctx.stroke();
+    }
+    // range ticks
+    ctx.strokeStyle = 'rgba(244,244,241,0.13)';
+    for (let d = 0; d < 360; d += 7.5){
+      const rad = d * Math.PI/180, long = d % 30 === 0;
+      const r1 = R_SCOPE - (long ? 13 : 6), r2 = R_SCOPE;
+      ctx.beginPath();
+      ctx.moveTo(CX + Math.cos(rad)*r1, CY + Math.sin(rad)*r1);
+      ctx.lineTo(CX + Math.cos(rad)*r2, CY + Math.sin(rad)*r2);
+      ctx.stroke();
+    }
+    // sweep
+    const sweep = (t - T.scope) * 0.62 * TAU;
+    const grad = ctx.createConicGradient ? ctx.createConicGradient(sweep, CX, CY) : null;
+    if (grad){
+      grad.addColorStop(0.00, 'rgba(44,102,245,0.22)');
+      grad.addColorStop(0.10, 'rgba(44,102,245,0.05)');
+      grad.addColorStop(0.34, 'rgba(44,102,245,0)');
+      grad.addColorStop(1.00, 'rgba(44,102,245,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(CX, CY, R_SCOPE, 0, TAU); ctx.fill();
+    }
+    ctx.strokeStyle = 'rgba(107,147,248,0.55)'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(CX, CY);
+    ctx.lineTo(CX + Math.cos(sweep)*R_SCOPE, CY + Math.sin(sweep)*R_SCOPE); ctx.stroke();
+
+    // blips — lit as the sweep passes
+    for (const n of nodes){
+      let d = ((n.ang - sweep) % TAU + TAU) % TAU;
+      const fresh = clamp(1 - d / 1.5, 0, 1);
+      const r = 2.6 + fresh * 2.2;
+      ctx.fillStyle = `rgba(107,147,248,${0.28 + fresh*0.72})`;
+      ctx.beginPath(); ctx.arc(n.bx, n.by, r, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /* --------------------------------------------------------------- the tower */
+  let logoFloat = null, logoTerrible = null;
+  let GA = 1;   // global alpha multiplier set by render()
+  function drawTower(t, a){
+    if (a <= 0.01) return;
+    ctx.save(); ctx.globalAlpha = a;
+    const pulse = (t * 0.9) % 1;
+    ctx.strokeStyle = `rgba(44,102,245,${0.42 * (1 - pulse)})`; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.arc(CX, CY, 62 + pulse * 96, 0, TAU); ctx.stroke();
+
+    ctx.fillStyle = 'rgba(11,11,11,0.94)';
+    roundRect(CX-104, CY-58, 208, 116, 3); ctx.fill();
+    ctx.strokeStyle = C.blue; ctx.lineWidth = 2; ctx.stroke();
+
+    if (logoFloat && logoFloat.complete){
+      const w = 128, h = w * (logoFloat.naturalHeight / logoFloat.naturalWidth);
+      ctx.drawImage(logoFloat, CX - w/2, CY - h/2 - 6, w, h);
+    }
+    ctx.font = F.semi(13); ctx.fillStyle = C.grey; ctx.textAlign = 'left';
+    const label = 'CONTROL';
+    const wlab = trackedWidth(label, 4.2);
+    tracked(label, CX - wlab/2, CY + 40, 4.2);
+    ctx.restore();
+  }
+
+  /* ------------------------------------------------------------ flight paths */
+  function flightPoint(f, u){
+    const s = nodes[f.src], d = nodes[f.dst];
+    const entry = 82;
+    if (u < 0.42){                      // strip -> blip
+      const k = u / 0.42;
+      const sx = s.sx + (s.side === 'L' ? s.pw - 6 : -10), sy = s.sy - 5;
+      const cx = lerp(sx, s.bx, 0.5), cy = lerp(sy, s.by, 0.5) + f.wob * 0.5;
+      return qbez(sx, sy, cx, cy, s.bx, s.by, k);
+    } else if (u < 0.5){                // blip -> approach gate
+      const k = (u - 0.42) / 0.08;
+      const gx = CX + Math.cos(s.ang) * entry * 1.9, gy = CY + Math.sin(s.ang) * entry * 1.9;
+      return [lerp(s.bx, gx, k), lerp(s.by, gy, k)];
+    } else if (u < 0.58){               // gate -> tower
+      const k = (u - 0.5) / 0.08;
+      const gx = CX + Math.cos(s.ang) * entry * 1.9, gy = CY + Math.sin(s.ang) * entry * 1.9;
+      return [lerp(gx, CX + Math.cos(s.ang)*entry*0.4, k), lerp(gy, CY + Math.sin(s.ang)*entry*0.4, k)];
+    } else if (u < 0.66){               // tower -> departure gate
+      const k = (u - 0.58) / 0.08;
+      const gx = CX + Math.cos(d.ang) * entry * 0.4, gy = CY + Math.sin(d.ang) * entry * 0.4;
+      const ex = CX + Math.cos(d.ang) * entry * 1.9, ey = CY + Math.sin(d.ang) * entry * 1.9;
+      return [lerp(gx, ex, k), lerp(gy, ey, k)];
+    } else if (u < 0.74){               // gate -> blip
+      const k = (u - 0.66) / 0.08;
+      const ex = CX + Math.cos(d.ang) * entry * 1.9, ey = CY + Math.sin(d.ang) * entry * 1.9;
+      return [lerp(ex, d.bx, k), lerp(ey, d.by, k)];
+    }
+    const k = (u - 0.74) / 0.26;        // blip -> strip
+    const dx = d.sx + (d.side === 'L' ? d.pw - 6 : -10), dy = d.sy - 5;
+    const cx = lerp(d.bx, dx, 0.5), cy = lerp(d.by, dy, 0.5) - f.wob * 0.5;
+    return qbez(d.bx, d.by, cx, cy, dx, dy, k);
+  }
+
+  // flight local progress, accounting for a hold in the stack
+  function flightState(f, t){
+    const total = f.legIn + f.hold + f.legOut;
+    const lt = t - f.dep;
+    if (lt < 0 || lt > total + 0.25) return null;
+    let u, holding = false;
+    if (lt < f.legIn) u = (lt / f.legIn) * 0.58;
+    else if (lt < f.legIn + f.hold) { u = 0.58; holding = true; }
+    else u = 0.58 + ((lt - f.legIn - f.hold) / f.legOut) * 0.42;
+    return { u: clamp(u, 0, 1), holding, lt, total };
+  }
+
+  function flightPath(f){
+    if (f._pts) return f._pts;
+    const pts = [];
+    for (let k = 0; k <= 56; k++) pts.push(flightPoint(f, k / 56));
+    f._pts = pts; return pts;
+  }
+
+  function drawFlights(t, a){
+    if (a <= 0.01) return;
+    ctx.save(); ctx.globalAlpha = a;
+    for (const f of flights){
+      const st = flightState(f, t);
+      if (!st) continue;
+      const [x, y] = st.holding
+        ? (() => { const ang = nodes[f.src].ang + (t - f.dep) * 2.4;
+                   return [CX + Math.cos(ang) * 128, CY + Math.sin(ang) * 128]; })()
+        : flightPoint(f, st.u);
+
+      // the cleared route, drawn end to end — this is the airspace
+      if (!st.holding){
+        const pts = flightPath(f);
+        ctx.strokeStyle = f.star ? 'rgba(224,163,58,0.20)' : 'rgba(44,102,245,0.17)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+        for (let k = 1; k < pts.length; k++) ctx.lineTo(pts[k][0], pts[k][1]);
+        ctx.stroke();
+      }
+      // trail
+      ctx.strokeStyle = f.star ? 'rgba(224,163,58,0.75)' : 'rgba(107,147,248,0.7)';
+      ctx.lineWidth = 2.2; ctx.beginPath();
+      for (let k = 1; k <= 12; k++){
+        const uu = clamp(st.u - k * 0.02, 0, 1);
+        const p = st.holding
+          ? [CX + Math.cos(nodes[f.src].ang + (t - f.dep - k*0.03) * 2.4) * 128,
+             CY + Math.sin(nodes[f.src].ang + (t - f.dep - k*0.03) * 2.4) * 128]
+          : flightPoint(f, uu);
+        if (k === 1) ctx.moveTo(x, y);
+        ctx.globalAlpha = a * (1 - k/13) * 0.85;
+        ctx.lineTo(p[0], p[1]);
+      }
+      ctx.stroke(); ctx.globalAlpha = a;
+
+      if (st.holding){
+        ctx.strokeStyle = 'rgba(224,163,58,0.32)'; ctx.setLineDash([3,6]); ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(CX, CY, 128, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+        ctx.font = F.semi(12); ctx.fillStyle = C.amber; ctx.textAlign = 'left';
+        tracked('HOLD', x + 12, y + 4, 2.4);
+      }
+      ctx.fillStyle = f.star ? 'rgba(224,163,58,0.16)' : 'rgba(107,147,248,0.16)';
+      ctx.beginPath(); ctx.arc(x, y, 12, 0, TAU); ctx.fill();
+      ctx.fillStyle = f.star ? C.amber : C.paper;
+      ctx.beginPath(); ctx.arc(x, y, f.star ? 5 : 4, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /* ----------------------------------------------------- strips + node labels */
+  function activityMap(t){
+    const m = new Map();
+    for (const f of flights){
+      const total = f.legIn + f.hold + f.legOut;
+      if (Math.abs(t - f.dep) < 0.32) m.set(f.src, 'out');
+      if (Math.abs(t - (f.dep + total)) < 0.42) m.set(f.dst, 'in');
+    }
+    return m;
+  }
+
+  function drawPanels(t, a){
+    if (a <= 0.01) return;
+    ctx.save(); ctx.globalAlpha = a; ctx.textAlign = 'left';
+    const groups = [['make','L'],['move','R'],['sell','R'],['settle','R']];
+    for (const [key, side] of groups){
+      const idxs = byIdx(key), head = nodes[idxs[0]];
+      const p = PANEL[side], y = head.groupTop;
+      ctx.font = F.bold(15); ctx.fillStyle = C.blue;
+      tracked(SECTORS[key].label.toUpperCase(), p.x, y, 4.6);
+      ctx.font = F.reg(13); ctx.fillStyle = C.dim; ctx.textAlign = 'right';
+      ctx.fillText(SECTORS[key].note, p.x + p.w, y);
+      ctx.textAlign = 'left';
+      ctx.strokeStyle = 'rgba(244,244,241,0.14)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(p.x, y + 10); ctx.lineTo(p.x + p.w, y + 10); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawNodes(t){
+    const act = activityMap(t);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    for (const n of nodes){
+      const p = nodePos(n, t), mix = p.mix;
+      const size = lerp(21, 15, mix);
+      ctx.font = mix > 0.5 ? F.semi(size) : F.semi(size);
+      const sp = lerp(0, 1.6, mix);
+      const label = mix > 0.5 ? n.label.toUpperCase() : n.label;
+      const w = trackedWidth(label, sp);
+      const x = lerp(p.x - w/2, p.x + 20, mix);
+      // float reaching out and pulling each job onto the board
+      if (mix > 0.04 && mix < 0.96){
+        ctx.save();
+        ctx.globalAlpha = GA * Math.sin(mix * Math.PI) * 0.75;
+        ctx.strokeStyle = C.blue; ctx.setLineDash([2,5]); ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(p.x, p.y - 4); ctx.lineTo(n.sx + 20, n.sy - 4); ctx.stroke();
+        ctx.restore();
+      }
+      const state = act.get(n.i);
+      const lit = state ? 1 : 0;
+
+      // strip chrome
+      if (mix > 0.02){
+        ctx.globalAlpha = GA * mix;
+        ctx.fillStyle = lit ? C.blue : 'rgba(244,244,241,0.22)';
+        ctx.fillRect(p.x + (mix < 1 ? 0 : 0), p.y - 6, 6, 6);
+        if (lit){
+          ctx.fillStyle = 'rgba(44,102,245,0.10)';
+          ctx.fillRect(p.x - 8, p.y - 17, n.pw + 16, 23);
+        }
+        ctx.font = F.reg(12); ctx.textAlign = 'right';
+        ctx.fillStyle = lit ? C.blue2 : 'rgba(150,150,143,0.55)';
+        ctx.fillText(state === 'out' ? 'departed' : state === 'in' ? 'cleared' : 'nominal',
+                     n.px + n.pw, p.y);
+        ctx.textAlign = 'left';
+        ctx.globalAlpha = GA;
+      }
+      const grabbed = mix > 0.06 && mix < 0.82;
+      ctx.fillStyle = lit ? C.paper
+        : grabbed ? 'rgba(107,147,248,0.95)'
+        : `rgba(244,244,241,${lerp(0.94, 0.84, mix)})`;
+      tracked(label, x, p.y, sp);
+    }
+  }
+
+  /* --------------------------------------------------------------------- HUD */
+  function drawHUD(t){
+    const chaosA = 1 - inv(t, T.tidy - 0.2, T.tidy + 1.0);
+    const floatA = inv(t, T.scope - 0.8, T.flow + 0.2) * (1 - inv(t, T.board, T.board + 0.8));
+    ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+
+    if (chaosA > 0.01){
+      ctx.save(); ctx.globalAlpha = chaosA;
+      const rows = [
+        ['handoffs this week', Math.round(1284 + Math.sin(t*3.1)*6)],
+        ['chased by email',    Math.round(214 + Math.sin(t*2.3+1)*4)],
+        ['unreconciled',       Math.round(37 + Math.sin(t*4.7+2)*2)],
+        ['single view of it',  'none']
+      ];
+      let y = 108;
+      for (const [k, v] of rows){
+        ctx.font = F.reg(14); ctx.fillStyle = C.grey; ctx.fillText(k, 1660, y);
+        ctx.font = F.black(20); ctx.fillStyle = C.amber; ctx.fillText(String(v), 1824, y);
+        y += 30;
+      }
+      ctx.restore();
+    }
+    if (floatA > 0.01){
+      ctx.save(); ctx.globalAlpha = floatA;
+      const prog = eo(inv(t, T.flow, T.surge + 2.4));
+      const vals = [ fmt(1284 * prog), fmt(41600 * prog), fmt(37 * prog), '0' ];
+      let y = 108;
+      STATS.forEach((s, i) => {
+        ctx.font = F.reg(14); ctx.fillStyle = C.grey; ctx.fillText(s.label, 1660, y);
+        ctx.font = F.black(20); ctx.fillStyle = i === 3 ? C.blue2 : C.paper;
+        ctx.fillText(vals[i], 1824, y);
+        y += 30;
+      });
+      ctx.font = F.semi(12); ctx.fillStyle = C.blue;
+      const t1 = 'FLOAT · LIVE';
+      ctx.textAlign = 'left';
+      tracked(t1, 1824 - trackedWidth(t1, 3.4), 70, 3.4);
+      ctx.restore();
+    }
+    ctx.textAlign = 'left';
+  }
+
+  /* ---------------------------------------------------------------- callouts */
+  function drawCallouts(t){
+    for (const co of CALLOUTS){
+      const a = Math.min(inv(t, co.t0, co.t0 + 0.35), 1 - inv(t, co.t0 + co.dur - 0.4, co.t0 + co.dur));
+      if (a <= 0.01) continue;
+      ctx.save(); ctx.globalAlpha = a;
+      const rise = (1 - eo(inv(t, co.t0, co.t0 + 0.45))) * 12;
+      const wBox = 300, hBox = 92, x = co.x - wBox/2, y = co.y - hBox/2 + rise;
+      ctx.fillStyle = 'rgba(11,11,11,0.90)';
+      roundRect(x, y, wBox, hBox, 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(44,102,245,0.85)'; ctx.lineWidth = 1.4; ctx.stroke();
+      ctx.fillStyle = C.blue; ctx.fillRect(x, y, 3, hBox);
+      ctx.textAlign = 'left';
+      ctx.font = F.semi(12); ctx.fillStyle = C.blue2;
+      tracked(('float ai · ' + co.tag).toUpperCase(), x + 20, y + 30, 2.6);
+      ctx.font = F.semi(19); ctx.fillStyle = C.paper;
+      wrapText(co.body, x + 20, y + 58, wBox - 40, 24);
+      // leader toward the scope
+      const dx = CX - co.x, dy = CY - co.y, len = Math.hypot(dx, dy);
+      ctx.strokeStyle = 'rgba(44,102,245,0.45)'; ctx.setLineDash([3,5]); ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(co.x + dx/len * (wBox/2 - 8), co.y + dy/len * (hBox/2 - 4) + rise);
+      ctx.lineTo(co.x + dx/len * (len - R_SCOPE - 6), co.y + dy/len * (len - R_SCOPE - 6) + rise);
+      ctx.stroke(); ctx.setLineDash([]);
+      ctx.restore();
+    }
+  }
+
+  function wrapText(text, x, y, maxW, lh){
+    const words = text.split(' ');
+    let line = '', yy = y;
+    for (const wd of words){
+      const test = line ? line + ' ' + wd : wd;
+      if (ctx.measureText(test).width > maxW && line){
+        ctx.fillText(line, x, yy); line = wd; yy += lh;
+      } else line = test;
+    }
+    ctx.fillText(line, x, yy);
+    return yy;
+  }
+
+  /* ---------------------------------------------------------------- captions */
+  function drawCaption(t){
+    for (const cp of CAPTIONS){
+      const a = Math.min(inv(t, cp.t0, cp.t0 + 0.5), 1 - inv(t, cp.t1 - 0.45, cp.t1));
+      if (a <= 0.01) continue;
+      ctx.save(); ctx.globalAlpha = a;
+      const rise = (1 - eo(inv(t, cp.t0, cp.t0 + 0.7))) * 18;
+      const x = 96; let y = 856 + rise;
+      ctx.textAlign = 'left';
+      ctx.font = F.semi(14); ctx.fillStyle = C.blue;
+      tracked(cp.kicker.toUpperCase(), x, y, 4.4);
+      ctx.fillStyle = C.paper; ctx.font = F.display(56);
+      y += 60;
+      for (const line of cp.head.split('\n')){ ctx.fillText(line, x, y); y += 58; }
+      ctx.font = F.reg(21); ctx.fillStyle = C.grey;
+      ctx.fillText(cp.sub, x, y - 6);
+      ctx.restore();
+    }
+  }
+
+  /* ------------------------------------------------------------------- board */
+  const CHIPS = [
+    { key:'make',   n:'16 partners', line:'artwork, licensing, production' },
+    { key:'move',   n:'8 systems',   line:'stock, freight, venue door' },
+    { key:'sell',   n:'6 channels',  line:'D2C, retail, tour, popup' },
+    { key:'settle', n:'5 ledgers',   line:'splits, tax, payouts' }
+  ];
+  function drawBoard(t){
+    const a = inv(t, T.board + 0.3, T.board + 1.2) * (1 - inv(t, T.end - 0.5, T.end));
+    if (a <= 0.01) return;
+    ctx.save(); ctx.globalAlpha = a;
+    const wBox = 372, gap = 24, x0 = (W - (wBox*4 + gap*3)) / 2, y = 366, hBox = 196;
+    CHIPS.forEach((ch, i) => {
+      const rise = (1 - eo(inv(t, T.board + 0.3 + i*0.10, T.board + 1.0 + i*0.10))) * 26;
+      const x = x0 + i * (wBox + gap), yy = y + rise;
+      ctx.fillStyle = 'rgba(20,20,20,0.96)';
+      roundRect(x, yy, wBox, hBox, 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(58,58,58,1)'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = C.blue; ctx.fillRect(x, yy, wBox, 2);
+      ctx.textAlign = 'left';
+      ctx.font = F.semi(13); ctx.fillStyle = C.blue;
+      tracked(ch.key.toUpperCase(), x + 28, yy + 40, 4.4);
+      ctx.font = F.display(44); ctx.fillStyle = C.paper;
+      ctx.fillText(ch.n, x + 28, yy + 106);
+      ctx.font = F.reg(18); ctx.fillStyle = C.grey;
+      wrapText(ch.line, x + 28, yy + 142, wBox - 56, 24);
+      ctx.fillStyle = C.blue;
+      ctx.beginPath(); ctx.arc(x + wBox - 30, yy + 34, 4.5, 0, TAU); ctx.fill();
+    });
+    // the mark, still in the middle of it
+    if (logoFloat && logoFloat.complete){
+      const lw = 150, lh = lw * (logoFloat.naturalHeight / logoFloat.naturalWidth);
+      ctx.drawImage(logoFloat, W/2 - lw/2, 176, lw, lh);
+    }
+    ctx.font = F.semi(14); ctx.fillStyle = C.grey; ctx.textAlign = 'left';
+    const s = 'ONE AIRSPACE · ONE TEAM · ONE SET OF NUMBERS';
+    tracked(s, W/2 - trackedWidth(s, 4.2)/2, y - 44, 4.2);
+
+    // one flow, still running underneath it
+    const spineY = y + hBox + 66, xA = x0 + 90, xB = x0 + wBox*4 + gap*3 - 90;
+    ctx.strokeStyle = 'rgba(244,244,241,0.16)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(xA, spineY); ctx.lineTo(xB, spineY); ctx.stroke();
+    ctx.strokeStyle = 'rgba(244,244,241,0.10)';
+    CHIPS.forEach((ch, i) => {
+      const cx2 = x0 + i * (wBox + gap) + wBox/2;
+      ctx.beginPath(); ctx.moveTo(cx2, y + hBox); ctx.lineTo(cx2, spineY); ctx.stroke();
+      ctx.fillStyle = 'rgba(244,244,241,0.22)';
+      ctx.beginPath(); ctx.arc(cx2, spineY, 3, 0, TAU); ctx.fill();
+    });
+    for (let k = 0; k < 5; k++){
+      const u = (((t - T.board) * 0.24 + k * 0.2) % 1);
+      const px = lerp(xA, xB, u);
+      ctx.fillStyle = 'rgba(107,147,248,0.16)';
+      ctx.beginPath(); ctx.arc(px, spineY, 10, 0, TAU); ctx.fill();
+      ctx.fillStyle = C.paper;
+      ctx.beginPath(); ctx.arc(px, spineY, 3.6, 0, TAU); ctx.fill();
+    }
+    ctx.font = F.reg(15); ctx.fillStyle = C.dim;
+    const flow = 'ONE FLOW · ARTWORK TO PAYOUT · NOTHING RE-KEYED';
+    tracked(flow, W/2 - trackedWidth(flow, 3.2)/2, spineY + 44, 3.2);
+    ctx.restore();
+  }
+
+  /* ---------------------------------------------------------------- end card */
+  function drawEnd(t){
+    const a = inv(t, T.end, T.end + 0.7);
+    if (a <= 0.01) return;
+    ctx.save(); ctx.globalAlpha = a;
+    ctx.fillStyle = 'rgba(11,11,11,0.96)'; ctx.fillRect(0,0,W,H);
+    const rise = (1 - eo(inv(t, T.end, T.end + 0.9))) * 18;
+    if (logoFloat && logoFloat.complete){
+      const w = 380, h = w * (logoFloat.naturalHeight / logoFloat.naturalWidth);
+      ctx.drawImage(logoFloat, W/2 - w/2, 372 + rise, w, h);
+    }
+    ctx.textAlign = 'center';
+    ctx.font = F.display(52); ctx.fillStyle = C.paper;
+    ctx.fillText('Air traffic control for merchandise.', W/2, 640 + rise);
+    ctx.font = F.reg(23); ctx.fillStyle = C.grey;
+    ctx.fillText('Everything you make, move, sell and settle — on one board, routed by AI.', W/2, 686 + rise);
+    ctx.strokeStyle = C.blue; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(W/2 - 60, 726 + rise); ctx.lineTo(W/2 + 60, 726 + rise); ctx.stroke();
+    if (logoTerrible && logoTerrible.complete){
+      const w = 176, h = w * (logoTerrible.naturalHeight / logoTerrible.naturalWidth);
+      ctx.drawImage(logoTerrible, W - 96 - w, H - 96 - h, w, h);
+    }
+    ctx.textAlign = 'left';
+    ctx.restore();
+  }
+
+  /* ------------------------------------------------------------------ render */
+  function render(t){
+    frame();
+    drawBackground(t);
+    const gone   = 1 - inv(t, T.end - 0.6, T.end);
+    const tangle = (1 - inv(t, T.tidy + 0.4, T.tidy + 2.2)) * gone;
+    const alive  = (1 - inv(t, T.board, T.board + 1.0) * 0.965) * gone;
+
+    drawTangle(t, tangle);
+    drawClaim(t);
+    drawScope(t, inv(t, T.scope - 1.9, T.scope + 0.3) * alive);
+    drawFlights(t, inv(t, T.flow - 0.6, T.flow + 0.3) * alive);
+    drawTower(t, inv(t, T.scope - 2.0, T.scope - 0.7) * alive);
+    drawPanels(t, inv(t, T.scope - 1.7, T.scope - 0.3) * alive);
+
+    ctx.save(); GA = Math.max(tangle, alive); ctx.globalAlpha = GA;
+    drawNodes(t);
+    GA = 1; ctx.restore();
+
+    drawCallouts(t);
+    drawHUD(t);
+    ctx.save(); ctx.globalAlpha = gone; drawCaption(t); ctx.restore();
+    drawBoard(t);
+    drawEnd(t);
+
+    const fade = inv(t, T.loop - 0.55, T.loop);
+    if (fade > 0){ ctx.fillStyle = `rgba(5,5,5,${fade})`; ctx.fillRect(0,0,W,H); }
+  }
+
+  /* ---------------------------------------------------------------- playback */
+  let tNow = 0, playing = true, speed = 1, looping = true, last = 0;
+  const $ = id => document.getElementById(id);
+  const btnPlay = $('play'), btnRestart = $('restart'), scrub = $('scrub'),
+        clock = $('clock'), selSpeed = $('speed'), chkLoop = $('loop');
+
+  function tick(now){
+    if (!last) last = now;
+    const dt = Math.min((now - last) / 1000, 0.1); last = now;
+    if (playing){
+      tNow += dt * speed;
+      if (tNow >= T.loop){ tNow = looping ? 0 : T.loop; if (!looping) setPlaying(false); }
+    }
+    render(tNow);
+    scrub.value = String(Math.round(tNow / T.loop * 1000));
+    clock.textContent = tNow.toFixed(1).padStart(4,'0') + ' / ' + T.loop.toFixed(1);
+    requestAnimationFrame(tick);
+  }
+  function setPlaying(v){ playing = v; btnPlay.textContent = v ? 'Pause' : 'Play'; }
+
+  btnPlay.onclick   = () => setPlaying(!playing);
+  btnRestart.onclick = () => { tNow = 0; setPlaying(true); };
+  scrub.oninput     = () => { tNow = Number(scrub.value) / 1000 * T.loop; };
+  selSpeed.onchange = () => { speed = Number(selSpeed.value); };
+  chkLoop.onchange  = () => { looping = chkLoop.checked; };
+  window.addEventListener('keydown', e => {
+    if (e.code === 'Space'){ e.preventDefault(); setPlaying(!playing); }
+    else if (e.key === 'ArrowRight'){ tNow = Math.min(T.loop, tNow + 1); }
+    else if (e.key === 'ArrowLeft'){ tNow = Math.max(0, tNow - 1); }
+    else if (e.key.toLowerCase() === 'r'){ tNow = 0; setPlaying(true); }
+    else if (e.key.toLowerCase() === 'f'){ document.body.classList.toggle('clean'); resize(); }
+  });
+
+  /* ------------------------------------------------------------------- boot */
+  function loadImage(src){
+    return new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+  }
+  Promise.all([
+    loadImage('assets/float-logo.webp'),
+    loadImage('assets/terrible-logo.webp'),
+    (document.fonts ? Promise.all([
+      document.fonts.load('normal 56px HelveticaNowText'),
+      document.fonts.load('900 20px Archivo'),
+      document.fonts.load('700 15px Archivo'),
+      document.fonts.load('600 15px Archivo'),
+      document.fonts.load('400 14px Archivo')
+    ]).catch(() => null) : Promise.resolve())
+  ]).then(([f, tl]) => {
+    logoFloat = f; logoTerrible = tl;
+    resize();
+    if (location.hash === '#clean' || location.search.includes('clean')) document.body.classList.add('clean');
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+      tNow = T.board + 1.4; setPlaying(false);
+    }
+    requestAnimationFrame(tick);
+    window.__floatAnim = { seek: s => { tNow = s; render(s); }, render, T };
+  });
+})();
+</script>
+</body>
+</html>
