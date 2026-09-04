@@ -61,7 +61,7 @@ def main() -> None:
 
     ffmpeg = ffmpeg_binary()
     if not ffmpeg:
-        raise SystemExit("ffmpeg not found — pip install imageio-ffmpeg")
+        raise SystemExit("ffmpeg not found: pip install imageio-ffmpeg")
     out = pathlib.Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     height = round(args.width * 9 / 16)
@@ -91,7 +91,7 @@ def main() -> None:
             if args.encode_only:
                 break
             page.evaluate(f"window.__floatAnim.seek({i / args.fps})")
-            # same-origin over http, so the canvas exports directly — far faster
+            # same-origin over http, so the canvas exports directly: far faster
             # than an element screenshot per frame
             data = page.evaluate("document.querySelector('#c').toDataURL('image/jpeg', 0.95)")
             (tmp / f"f{i:05d}.jpg").write_bytes(base64.b64decode(data.split(",", 1)[1]))
@@ -106,7 +106,7 @@ def main() -> None:
                     "-vf", f"scale={args.width}:{height}", str(out)],
                    check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     server.shutdown()
-    print(f"{out} — {out.stat().st_size / 1e6:.1f} MB")
+    print(f"{out} {out.stat().st_size / 1e6:.1f} MB")
 
 
 if __name__ == "__main__":

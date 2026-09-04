@@ -208,7 +208,7 @@
     }
   })();
 
-  // scattered "before" positions — the tangle
+  // scattered "before" positions: the tangle
   (function layoutChaos(){
     for (const n of nodes) {
       const a = rnd() * TAU, r = Math.sqrt(rnd());
@@ -284,7 +284,7 @@
         wob: (r() - 0.5) * 60
       });
     }
-    // the sequencing beat — two shipments arrive on the same slot, one is held
+    // the sequencing beat: two shipments arrive on the same slot, one is held
     out.push({ src: nodes.findIndex(n=>n.label==='shipping'), dst: nodes.findIndex(n=>n.label==='retail'),
                dep: T.hold - 1.2, legIn: 1.2, hold: 0.0, legOut: 1.2, wob: 0, star: true });
     out.push({ src: nodes.findIndex(n=>n.label==='records'), dst: nodes.findIndex(n=>n.label==='D2C'),
@@ -299,7 +299,7 @@
     { t0: 11.2, dur: 3.2, x: 590,  y: 812, tag: 'reorder',
       body: 'Tee restock raised 11 days early' },
     { t0: 12.9, dur: 3.2, x: 1330, y: 812, tag: 'sequencing',
-      body: 'Two consignments, one dock — spaced 40 mins' },
+      body: 'Two consignments, one dock, spaced 40 mins' },
     { t0: 15.9, dur: 3.2, x: 590,  y: 252, tag: 'reallocation',
       body: '400 units held back from Glasgow, sent to Leeds' },
     { t0: 17.9, dur: 2.6, x: 1330, y: 812, tag: 'settlement',
@@ -308,17 +308,17 @@
 
   const CAPTIONS = [
     { t0: 0.05, t1: 6.0,  kicker: 'before',
-      head: 'Forty suppliers. Six systems.\nOne spreadsheet.',
-      sub: 'Every merch programme is a pile of handoffs nobody can see.' },
+      head: 'Hundreds of suppliers,\ndisconnected systems,\nendless spreadsheets.',
+      sub: 'Every merchandise company is dealing with hundreds of handoffs and processes that no one can see or control.' },
     { t0: 6.4,  t1: 12.4, kicker: 'float by terrible*',
       head: 'Air traffic control\nfor merchandise.',
-      sub: 'One airspace. Every job on the scope, from artwork to payout.' },
+      sub: 'One airspace, every cost, every shipment, every transaction, every process in one place.' },
     { t0: 12.8, t1: 19.9, kicker: 'float ai',
       head: 'It does not just watch.\nIt routes.',
       sub: 'Demand read live, stock moved before it strands, dockings sequenced.' },
     { t0: 20.9, t1: 24.0, kicker: 'after',
       head: 'Every transaction.\nEvery data point. One tower.',
-      sub: 'The same complexity — run by one team, on one board.' }
+      sub: 'The same complexity, run by one team, on one board.' }
   ];
 
   const STATS = [
@@ -459,7 +459,7 @@
     ctx.beginPath(); ctx.moveTo(CX, CY);
     ctx.lineTo(CX + Math.cos(sweep)*R_SCOPE, CY + Math.sin(sweep)*R_SCOPE); ctx.stroke();
 
-    // blips — lit as the sweep passes
+    // blips, lit as the sweep passes
     for (const n of nodes){
       let d = ((n.ang - sweep) % TAU + TAU) % TAU;
       const fresh = clamp(1 - d / 1.5, 0, 1);
@@ -471,6 +471,7 @@
   }
 
   /* --------------------------------------------------------------- the tower */
+  const MARK_RX = 112, MARK_RY = 66;   // keep-out around the float mark
   let logoFloat = null, logoTerrible = null;
   let GA = 1;   // global alpha multiplier set by render()
   function drawTower(t, a){
@@ -479,10 +480,6 @@
     const pulse = (t * 0.9) % 1;
     ctx.strokeStyle = `rgba(44,102,245,${0.42 * (1 - pulse)})`; ctx.lineWidth = 1.4;
     ctx.beginPath(); ctx.arc(CX, CY, 62 + pulse * 96, 0, TAU); ctx.stroke();
-
-    ctx.fillStyle = 'rgba(11,11,11,0.94)';
-    roundRect(CX-104, CY-58, 208, 116, 3); ctx.fill();
-    ctx.strokeStyle = C.blue; ctx.lineWidth = 2; ctx.stroke();
 
     if (logoFloat && logoFloat.complete){
       const w = 128, h = w * (logoFloat.naturalHeight / logoFloat.naturalWidth);
@@ -511,10 +508,10 @@
     } else if (u < 0.58){               // gate -> tower
       const k = (u - 0.5) / 0.08;
       const gx = CX + Math.cos(s.ang) * entry * 1.9, gy = CY + Math.sin(s.ang) * entry * 1.9;
-      return [lerp(gx, CX + Math.cos(s.ang)*entry*0.4, k), lerp(gy, CY + Math.sin(s.ang)*entry*0.4, k)];
+      return [lerp(gx, CX + Math.cos(s.ang) * MARK_RX, k), lerp(gy, CY + Math.sin(s.ang) * MARK_RY, k)];
     } else if (u < 0.66){               // tower -> departure gate
       const k = (u - 0.58) / 0.08;
-      const gx = CX + Math.cos(d.ang) * entry * 0.4, gy = CY + Math.sin(d.ang) * entry * 0.4;
+      const gx = CX + Math.cos(d.ang) * MARK_RX, gy = CY + Math.sin(d.ang) * MARK_RY;
       const ex = CX + Math.cos(d.ang) * entry * 1.9, ey = CY + Math.sin(d.ang) * entry * 1.9;
       return [lerp(gx, ex, k), lerp(gy, ey, k)];
     } else if (u < 0.74){               // gate -> blip
@@ -558,7 +555,7 @@
                    return [CX + Math.cos(ang) * 128, CY + Math.sin(ang) * 128]; })()
         : flightPoint(f, st.u);
 
-      // the cleared route, drawn end to end — this is the airspace
+      // the cleared route, drawn end to end: this is the airspace
       if (!st.holding){
         const pts = flightPath(f);
         ctx.strokeStyle = f.star ? 'rgba(224,163,58,0.20)' : 'rgba(44,102,245,0.17)';
@@ -761,15 +758,16 @@
       if (a <= 0.01) continue;
       ctx.save(); ctx.globalAlpha = a;
       const rise = (1 - eo(inv(t, cp.t0, cp.t0 + 0.7))) * 18;
-      const x = 96; let y = 856 + rise;
+      const x = 96, lines = cp.head.split('\n');
+      const subY = 1012 + rise, lastLine = subY - 46;
+      let y = lastLine - (lines.length - 1) * 58;
       ctx.textAlign = 'left';
       ctx.font = F.semi(14); ctx.fillStyle = C.blue;
-      tracked(cp.kicker.toUpperCase(), x, y, 4.4);
+      tracked(cp.kicker.toUpperCase(), x, y - 60, 4.4);
       ctx.fillStyle = C.paper; ctx.font = F.display(56);
-      y += 60;
-      for (const line of cp.head.split('\n')){ ctx.fillText(line, x, y); y += 58; }
+      for (const line of lines){ ctx.fillText(line, x, y); y += 58; }
       ctx.font = F.reg(21); ctx.fillStyle = C.grey;
-      ctx.fillText(cp.sub, x, y - 6);
+      ctx.fillText(cp.sub, x, subY);
       ctx.restore();
     }
   }
@@ -852,7 +850,7 @@
     ctx.font = F.display(52); ctx.fillStyle = C.paper;
     ctx.fillText('Air traffic control for merchandise.', W/2, 640 + rise);
     ctx.font = F.reg(23); ctx.fillStyle = C.grey;
-    ctx.fillText('Everything you make, move, sell and settle — on one board, routed by AI.', W/2, 686 + rise);
+    ctx.fillText('Every cost, every shipment, every transaction, every process in one place.', W/2, 686 + rise);
     ctx.strokeStyle = C.blue; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(W/2 - 60, 726 + rise); ctx.lineTo(W/2 + 60, 726 + rise); ctx.stroke();
     if (logoTerrible && logoTerrible.complete){

@@ -35,7 +35,7 @@ def main() -> None:
 
     OUT.parent.mkdir(exist_ok=True)
     OUT.write_text(html)
-    print(f"{OUT} — {len(html) / 1e6:.2f} MB")
+    print(f"{OUT} {len(html) / 1e6:.2f} MB")
 
 
 if __name__ == "__main__":
