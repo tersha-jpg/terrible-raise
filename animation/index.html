@@ -114,10 +114,8 @@
     ['artwork','make'], ['assets','make'], ['licenses','make'], ['chart registration','make'],
     ['inventory','move'], ['pick/pack','move'], ['QC','move'], ['barcode','move'],
     ['storage','move'], ['shipping','move'], ['returns','move'], ['logistics','move'],
-    ['D2C','sell'], ['retail','sell'], ['shows','sell'], ['venues','sell'],
-    ['popups','sell'], ['concessions','sell'],
-    ['payments','settle'], ['taxes','settle'], ['payouts','settle'],
-    ['reports','settle'], ['accounts','settle']
+    ['D2C','sell'], ['retail','sell'], ['tour','sell'], ['popups','sell'],
+    ['splits','settle'], ['taxes','settle'], ['costs','settle'], ['payouts','settle']
   ];
 
   const SECTORS = {
@@ -294,15 +292,15 @@
 
   /* ------------------------------------------------------------ float ai bits */
   const CALLOUTS = [
-    { t0: 9.4,  dur: 3.0, x: 1330, y: 252, tag: 'demand signal',
+    { t0: 9.4,  dur: 3.0, x: 1318, y: 214, tag: 'demand signal',
       body: 'Manchester sell-through 92% at 40 mins' },
-    { t0: 11.2, dur: 3.2, x: 590,  y: 812, tag: 'reorder',
+    { t0: 11.2, dur: 3.2, x: 606,  y: 726, tag: 'reorder',
       body: 'Tee restock raised 11 days early' },
-    { t0: 12.9, dur: 3.2, x: 1330, y: 812, tag: 'sequencing',
+    { t0: 12.9, dur: 3.2, x: 1318, y: 726, tag: 'sequencing',
       body: 'Two consignments, one landing slot, spaced 40 mins' },
-    { t0: 15.9, dur: 3.2, x: 590,  y: 252, tag: 'reallocation',
+    { t0: 15.9, dur: 3.2, x: 606,  y: 214, tag: 'reallocation',
       body: '400 units held back from Glasgow, sent to Leeds' },
-    { t0: 17.9, dur: 2.6, x: 1330, y: 812, tag: 'settlement',
+    { t0: 17.9, dur: 2.6, x: 1318, y: 726, tag: 'settlement',
       body: 'Venue split matched, payout queued' }
   ];
 
@@ -717,16 +715,19 @@
       if (a <= 0.01) continue;
       ctx.save(); ctx.globalAlpha = a;
       const rise = (1 - eo(inv(t, co.t0, co.t0 + 0.45))) * 12;
-      const wBox = 300, hBox = 92, x = co.x - wBox/2, y = co.y - hBox/2 + rise;
-      ctx.fillStyle = 'rgba(11,11,11,0.90)';
-      roundRect(x, y, wBox, hBox, 2); ctx.fill();
-      ctx.strokeStyle = 'rgba(44,102,245,0.85)'; ctx.lineWidth = 1.4; ctx.stroke();
-      ctx.fillStyle = C.blue; ctx.fillRect(x, y, 3, hBox);
+      const wBox = 252, pad = 20;
+      ctx.font = F.semi(16);
+      const body = wrapLines(co.body, wBox - pad * 2);
+      const hBox = 44 + body.length * 20;
+      const x = co.x - wBox/2, y = co.y - hBox/2 + rise;
+      roundRect(x, y, wBox, hBox, 2);
+      ctx.strokeStyle = 'rgba(44,102,245,0.85)'; ctx.lineWidth = 1.2; ctx.stroke();
+      ctx.fillStyle = C.blue; ctx.fillRect(x, y, 2.5, hBox);
       ctx.textAlign = 'left';
-      ctx.font = F.semi(12); ctx.fillStyle = C.blue2;
-      tracked(('float ai · ' + co.tag).toUpperCase(), x + 20, y + 30, 2.6);
-      ctx.font = F.semi(19); ctx.fillStyle = C.paper;
-      wrapText(co.body, x + 20, y + 58, wBox - 40, 24);
+      ctx.font = F.semi(10); ctx.fillStyle = C.blue2;
+      tracked(('float ai · ' + co.tag).toUpperCase(), x + pad, y + 22, 2.2);
+      ctx.font = F.semi(16); ctx.fillStyle = C.paper;
+      body.forEach((line, i) => ctx.fillText(line, x + pad, y + 44 + i * 20));
       // leader toward the scope
       const dx = CX - co.x, dy = CY - co.y, len = Math.hypot(dx, dy);
       ctx.strokeStyle = 'rgba(44,102,245,0.45)'; ctx.setLineDash([3,5]); ctx.lineWidth = 1;
@@ -736,6 +737,19 @@
       ctx.stroke(); ctx.setLineDash([]);
       ctx.restore();
     }
+  }
+
+  function wrapLines(text, maxW){
+    const words = text.split(' ');
+    const out = [];
+    let line = '';
+    for (const wd of words){
+      const test = line ? line + ' ' + wd : wd;
+      if (ctx.measureText(test).width > maxW && line){ out.push(line); line = wd; }
+      else line = test;
+    }
+    out.push(line);
+    return out;
   }
 
   function wrapText(text, x, y, maxW, lh){
@@ -777,7 +791,7 @@
     { key:'make',   n:'176 partners', line:'artwork, production' },
     { key:'move',   n:'8 systems',    line:'stock, freight, warehouse, venue door' },
     { key:'sell',   n:'4 channels',   line:'D2C, retail, tour, popups' },
-    { key:'settle', n:'5 ledgers',    line:'splits, taxes, costs, payouts' }
+    { key:'settle', n:'4 ledgers',    line:'splits, taxes, costs, payouts' }
   ];
   function drawBoard(t){
     const a = inv(t, T.board + 0.3, T.board + 1.2) * (1 - inv(t, T.end - 0.5, T.end));
@@ -787,8 +801,7 @@
     CHIPS.forEach((ch, i) => {
       const rise = (1 - eo(inv(t, T.board + 0.3 + i*0.10, T.board + 1.0 + i*0.10))) * 26;
       const x = x0 + i * (wBox + gap), yy = y + rise;
-      ctx.fillStyle = 'rgba(20,20,20,0.96)';
-      roundRect(x, yy, wBox, hBox, 2); ctx.fill();
+      roundRect(x, yy, wBox, hBox, 2);
       ctx.strokeStyle = 'rgba(58,58,58,1)'; ctx.lineWidth = 1; ctx.stroke();
       ctx.fillStyle = C.blue; ctx.fillRect(x, yy, wBox, 2);
       ctx.textAlign = 'left';
@@ -840,7 +853,6 @@
     const a = inv(t, T.end, T.end + 0.7);
     if (a <= 0.01) return;
     ctx.save(); ctx.globalAlpha = a;
-    ctx.fillStyle = 'rgba(11,11,11,0.96)'; ctx.fillRect(0,0,W,H);
     const rise = (1 - eo(inv(t, T.end, T.end + 0.9))) * 18;
     if (logoFloat && logoFloat.complete){
       const w = 380, h = w * (logoFloat.naturalHeight / logoFloat.naturalWidth);
@@ -867,7 +879,7 @@
     drawBackground(t);
     const gone   = 1 - inv(t, T.end - 0.6, T.end);
     const tangle = (1 - inv(t, T.tidy + 0.4, T.tidy + 2.2)) * gone;
-    const alive  = (1 - inv(t, T.board, T.board + 1.0) * 0.965) * gone;
+    const alive  = (1 - inv(t, T.board, T.board + 1.0) * 0.982) * gone;
 
     drawTangle(t, tangle);
     drawClaim(t);

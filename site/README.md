@@ -11,7 +11,7 @@ or a laptop instead of 1080 × 1920 boards.
 | --- | --- |
 | `index.html` | The site. All CSS and JS inline; no build step, no dependencies. |
 | `assets/img/` | Photography, product shots and logos, copied from `../stories/`. |
-| `assets/fonts/` | Helvetica Now Text (Bold), the subset the deck itself embeds. |
+| `assets/fonts/` | Helvetica Now Text (Bold), the subset the deck embeds, and Archivo variable. Both self-hosted, so the site and the animation set type identically with no network fonts. |
 | `build-artifact.py` | Inlines every asset into `dist/artifact.html` for publishing as a single file. |
 
 ## Run it locally
@@ -21,8 +21,8 @@ python3 -m http.server 8000 --directory site
 # then open http://localhost:8000
 ```
 
-Opening `index.html` directly off disk works too, though `file://` blocks the
-Google Fonts request, so body copy falls back to Helvetica/Arial.
+Opening `index.html` directly off disk works too. Both typefaces are local, so the
+page sets correctly with no network access.
 
 ## Deploy
 
