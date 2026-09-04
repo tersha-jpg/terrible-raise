@@ -8,11 +8,14 @@ so nothing drops and the file is identical every run.
     python3 animation/make-video.py [--fps 30] [--width 1920] [--out animation/dist/float-atc.mp4]
 """
 import argparse
-import base64
+import functools
+import http.server
 import pathlib
 import shutil
+import socketserver
 import subprocess
 import tempfile
+import threading
 
 HERE = pathlib.Path(__file__).resolve().parent
 CHROME_CANDIDATES = [
@@ -45,13 +48,20 @@ def main() -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     height = round(args.width * 9 / 16)
 
+    # serve the folder so the canvas stays same-origin (file:// taints it)
+    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(HERE))
+    socketserver.TCPServer.allow_reuse_address = True
+    server = socketserver.TCPServer(("127.0.0.1", 0), handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    port = server.server_address[1]
+
     with tempfile.TemporaryDirectory() as tmp, sync_playwright() as pw:
         tmp = pathlib.Path(tmp)
         chrome = find(CHROME_CANDIDATES, "chromium")
         browser = pw.chromium.launch(executable_path=chrome)
         page = browser.new_page(viewport={"width": args.width, "height": height},
                                 device_scale_factor=1)
-        page.goto((HERE / "index.html").as_uri() + "#clean")
+        page.goto(f"http://127.0.0.1:{port}/index.html#clean")
         page.wait_for_function("window.__floatAnim !== undefined", timeout=20000)
         page.wait_for_timeout(600)
         total = page.evaluate("window.__floatAnim.T.loop")
@@ -59,19 +69,18 @@ def main() -> None:
         print(f"{frames} frames at {args.fps}fps · {args.width}×{height}")
         for i in range(frames):
             page.evaluate(f"window.__floatAnim.seek({i / args.fps})")
-            data = page.evaluate(
-                "document.querySelector('#c').toDataURL('image/jpeg', 0.94)")
-            (tmp / f"f{i:05d}.jpg").write_bytes(base64.b64decode(data.split(",", 1)[1]))
+            page.locator("#c").screenshot(path=str(tmp / f"f{i:05d}.png"))
             if i % 60 == 0:
                 print(f"  {i}/{frames}")
         browser.close()
 
         subprocess.run([ffmpeg, "-y", "-framerate", str(args.fps),
-                        "-i", str(tmp / "f%05d.jpg"),
+                        "-i", str(tmp / "f%05d.png"),
                         "-c:v", "libx264", "-pix_fmt", "yuv420p",
                         "-crf", "18", "-preset", "slow",
                         "-vf", f"scale={args.width}:{height}", str(out)],
                        check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    server.shutdown()
     print(f"{out} — {out.stat().st_size / 1e6:.1f} MB")
 
 
