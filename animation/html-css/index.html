@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>float control tower</title>
+<meta name="description" content="float by terrible*, air traffic control for merchandise. An HTML and CSS animation.">
+<style>
+/* ============================================================================
+   float control tower, in HTML and CSS.
+
+   No canvas and no JavaScript: every word on screen is real text you can edit
+   in the markup, and every movement is a CSS animation on one 28s loop.
+
+   Editing:
+     .stage           28s loop, set --loop to retime the whole piece
+     .scene-*         which beat is on screen, as percentages of that loop
+     text             plain HTML, edit it in place
+     :root            palette and type
+   The stage is a container, and everything inside is sized in cqw (1cqw = 1%
+   of the stage width), so the whole composition scales with its box.
+   ========================================================================= */
+
+@font-face {
+  font-family: 'Archivo';
+  src: url('assets/archivo-var.woff2') format('woff2');
+  font-weight: 100 900; font-style: normal; font-display: block;
+}
+@font-face {
+  font-family: 'HelveticaNowText';
+  src: url('assets/helvetica-now-text.woff2') format('woff2');
+  font-weight: normal; font-style: normal; font-display: block;
+}
+
+:root {
+  --ink: #0b0b0b;
+  --paper: #f4f4f1;
+  --grey: #96968f;
+  --dim: #4a4a46;
+  --blue: #2c66f5;
+  --blue-lift: #6b93f8;
+  --amber: #e0a33a;
+  --sans: Archivo, Helvetica, Arial, sans-serif;
+  --display: 'HelveticaNowText', Archivo, Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--ink); }
+
+.stage {
+  --loop: 28s;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  container-type: size;
+  background:
+    radial-gradient(120% 90% at 50% 34%, #191919 0%, #0c0c0c 62%, #070707 100%);
+  color: var(--paper);
+  font-family: var(--sans);
+  font-size: 1cqw;
+  line-height: 1.35;
+}
+.stage::after {      /* film grain, the same tooth the deck uses */
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='0.22'/%3E%3C/svg%3E");
+}
+
+/* ---------------------------------------------------------------- scenes --- */
+.scene { position: absolute; inset: 0; opacity: 0; animation: var(--loop) linear infinite; }
+.scene-tangle  { animation-name: scene-tangle; }
+.scene-control { animation-name: scene-control; }
+.scene-board   { animation-name: scene-board; }
+.scene-end     { animation-name: scene-end; }
+
+@keyframes scene-tangle {
+  0%, 19% { opacity: 1 } 25%, 100% { opacity: 0 }
+}
+@keyframes scene-control {
+  0%, 20% { opacity: 0 } 27%, 69% { opacity: 1 } 74%, 100% { opacity: 0 }
+}
+@keyframes scene-board {
+  0%, 71% { opacity: 0 } 76%, 84% { opacity: 1 } 87%, 100% { opacity: 0 }
+}
+@keyframes scene-end {
+  0%, 85% { opacity: 0 } 89%, 98% { opacity: 1 } 100% { opacity: 0 }
+}
+
+/* ------------------------------------------------------------- the tangle --- */
+.web { position: absolute; inset: 0; width: 100%; height: 100%; }
+.web path { fill: none; stroke: var(--blue); stroke-width: 1.2; stroke-dasharray: 2 6; opacity: .55; }
+.web .orbit { opacity: .3; }
+.web .drift { stroke-dasharray: 5 999; stroke-width: 3.4; stroke-linecap: round;
+  stroke: var(--amber); opacity: .9; animation: drift 9s linear infinite;
+  animation-delay: var(--d); }
+@keyframes drift { from { stroke-dashoffset: 0 } to { stroke-dashoffset: -1400 } }
+
+.tag {
+  position: absolute; transform: translate(-50%, -50%);
+  font-size: 1.35cqw; font-weight: 600; letter-spacing: .01em; white-space: nowrap;
+  animation: jitter 7s ease-in-out infinite; animation-delay: var(--d);
+}
+@keyframes jitter {
+  0%, 100% { translate: 0 0 } 33% { translate: .35cqw -.2cqw } 66% { translate: -.3cqw .25cqw }
+}
+
+/* ------------------------------------------------------------- the scope --- */
+.scope { position: absolute; inset: 0; width: 100%; height: 100%; }
+.scope circle.ring, .scope line { fill: none; stroke: var(--paper); opacity: .12; stroke-width: 1; }
+.scope circle.blip { fill: var(--blue-lift); opacity: .5;
+  animation: blip 6s linear infinite; animation-delay: var(--d); }
+@keyframes blip { 0% { opacity: 1; r: 5 } 22%, 100% { opacity: .3; r: 3 } }
+
+.sweep {
+  position: absolute; left: 50%; top: 47.78%;
+  width: 29.00%; aspect-ratio: 1; border-radius: 50%;
+  /* the centring translate lives in the same transform as the rotation: the
+     standalone `rotate` property composes outside `transform`, which would swing
+     the circle around the stage instead of spinning it in place */
+  transform: translate(-50%, -50%) rotate(0deg);
+  background: conic-gradient(rgba(44,102,245,.22), rgba(44,102,245,.12) 6%, rgba(44,102,245,.03) 16%, rgba(44,102,245,0) 30%, rgba(44,102,245,0) 100%);
+  animation: sweep 6s linear infinite;
+}
+@keyframes sweep { to { transform: translate(-50%, -50%) rotate(360deg) } }
+
+.routes { position: absolute; inset: 0; width: 100%; height: 100%; }
+.routes .route { fill: none; stroke: var(--blue); stroke-width: 1.2; opacity: .26; }
+.routes .packet {
+  fill: none; stroke: var(--paper); stroke-width: 3.6; stroke-linecap: round;
+  stroke-dasharray: 7 993; filter: drop-shadow(0 0 5px rgba(107,147,248,.95));
+  animation: fly 7.4s linear infinite; animation-delay: var(--d);
+}
+@keyframes fly { from { stroke-dashoffset: 0 } to { stroke-dashoffset: -1000 } }
+
+.mark {
+  position: absolute; left: 50%; top: 47.78%; transform: translate(-50%, -50%);
+  text-align: center; z-index: 2;
+}
+.mark img { width: 8.6cqw; height: auto; display: block; }
+.mark span { display: block; margin-top: .5cqw; font-size: .85cqw; font-weight: 600;
+  letter-spacing: .38em; text-transform: uppercase; color: var(--grey); }
+.mark::before {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 7cqw; aspect-ratio: 1;
+  translate: -50% -50%; border: 1px solid var(--blue); border-radius: 50%;
+  animation: pulse 3s ease-out infinite;
+}
+@keyframes pulse {
+  from { scale: .5; opacity: .5 } to { scale: 2.6; opacity: 0 }
+}
+
+/* --------------------------------------------------------- flight strips --- */
+.panel { position: absolute; top: 22%; width: 21%; }
+.panel-left { left: 5% }
+.panel-right { right: 5% }
+.panel h3 {
+  margin: 1.2cqw 0 .45cqw; padding-bottom: .45cqw; border-bottom: 1px solid rgba(244,244,241,.14);
+  font-size: .95cqw; font-weight: 700; letter-spacing: .3em; text-transform: uppercase;
+  color: var(--blue); display: flex; justify-content: space-between; align-items: baseline;
+}
+.panel h3 small { font-weight: 400; letter-spacing: .02em; text-transform: none; color: var(--dim); }
+.panel + .panel h3 { margin-top: 1.2cqw }
+.panel ul { margin: 0 0 0; padding: 0; list-style: none }
+.panel li {
+  display: flex; justify-content: space-between; align-items: center; gap: .5cqw;
+  padding: .2cqw .4cqw; font-size: .86cqw; font-weight: 600; letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.panel li::before {
+  content: ''; width: .42cqw; aspect-ratio: 1; background: rgba(244,244,241,.22); flex: none;
+}
+.panel li span { flex: 1 }
+.panel li em { font-style: normal; font-weight: 400; font-size: .78cqw; letter-spacing: .02em;
+  text-transform: lowercase; color: rgba(150,150,143,.6) }
+.panel li.lit { background: rgba(44,102,245,.10) }
+.panel li.lit::before { background: var(--blue) }
+.panel li.lit em { color: var(--blue-lift) }
+
+/* ------------------------------------------------------------------ HUD --- */
+.hud { position: absolute; top: 5%; right: 5%; width: 21%; text-align: right }
+.hud div { display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: .42cqw; font-size: .88cqw; color: var(--grey) }
+.hud b { font-weight: 900; font-size: 1.25cqw; color: var(--paper);
+  font-variant-numeric: tabular-nums }
+.hud .kicker { display: block; margin-bottom: 1cqw; font-size: .78cqw; font-weight: 600;
+  letter-spacing: .3em; text-transform: uppercase; color: var(--blue) }
+.hud-before b { color: var(--amber) }
+
+/* -------------------------------------------------------------- callouts --- */
+.callout {
+  position: absolute; width: 17%; padding: 1cqw 1.2cqw;
+  border: 1px solid rgba(44,102,245,.85); border-left: .18cqw solid var(--blue);
+  opacity: 0; animation: var(--loop) linear infinite;
+}
+.callout b { display: block; margin-bottom: .5cqw; font-size: .72cqw; font-weight: 600;
+  letter-spacing: .22em; text-transform: uppercase; color: var(--blue-lift) }
+.callout p { margin: 0; font-size: 1.02cqw; font-weight: 600 }
+.callout-1 { left: 28%; top: 17%; animation-name: co1 }
+.callout-2 { right: 28%; top: 17%; animation-name: co2 }
+.callout-3 { right: 28%; top: 62%; animation-name: co3 }
+@keyframes co1 { 0%,33% { opacity:0; translate:0 .6cqw } 36%,45% { opacity:1; translate:0 0 } 48%,100% { opacity:0 } }
+@keyframes co2 { 0%,45% { opacity:0; translate:0 .6cqw } 48%,58% { opacity:1; translate:0 0 } 61%,100% { opacity:0 } }
+@keyframes co3 { 0%,56% { opacity:0; translate:0 .6cqw } 59%,68% { opacity:1; translate:0 0 } 70%,100% { opacity:0 } }
+
+/* -------------------------------------------------------------- captions --- */
+.caption { position: absolute; left: 5%; bottom: 6%; width: 60% }
+.caption .kicker {
+  display: block; margin-bottom: 1.4cqw; font-size: .82cqw; font-weight: 600;
+  letter-spacing: .3em; text-transform: uppercase; color: var(--blue);
+}
+.caption h2 {
+  margin: 0 0 1.1cqw; font-family: var(--display); font-weight: normal;
+  font-size: 3.1cqw; line-height: 1.04; letter-spacing: -.015em; text-wrap: balance;
+}
+.caption p { margin: 0; font-size: 1.18cqw; color: var(--grey) }
+.caption.late { opacity: 0; animation: var(--loop) linear infinite; animation-name: cap-late }
+.caption.early { animation: var(--loop) linear infinite; animation-name: cap-early }
+@keyframes cap-early { 0%,40% { opacity: 1 } 44%,100% { opacity: 0 } }
+@keyframes cap-late  { 0%,42% { opacity: 0 } 46%,100% { opacity: 1 } }
+
+/* ----------------------------------------------------------------- board --- */
+.board { position: absolute; inset: 0; display: grid; align-content: center;
+  justify-items: center; gap: 1.6cqw }
+.board > img { width: 9cqw; height: auto }
+.board .rule { font-size: .88cqw; font-weight: 600; letter-spacing: .3em; color: var(--grey) }
+.chips { display: flex; gap: 1.4cqw; width: 84%; }
+.chip { flex: 1; padding: 1.6cqw 1.6cqw 1.8cqw; border: 1px solid #3a3a3a; border-top: 2px solid var(--blue) }
+.chip h4 { margin: 0 0 1.4cqw; font-size: .82cqw; font-weight: 600; letter-spacing: .3em;
+  text-transform: uppercase; color: var(--blue) }
+.chip strong { display: block; font-family: var(--display); font-weight: normal; font-size: 2.4cqw;
+  line-height: 1; margin-bottom: .9cqw }
+.chip p { margin: 0; font-size: 1cqw; color: var(--grey) }
+.spine { position: relative; width: 84%; height: 1px; background: rgba(244,244,241,.16) }
+.spine i { position: absolute; top: 50%; width: .6cqw; aspect-ratio: 1; border-radius: 50%;
+  background: var(--paper); translate: -50% -50%;
+  box-shadow: 0 0 0 .5cqw rgba(107,147,248,.14);
+  animation: spine 9s linear infinite; animation-delay: var(--d) }
+@keyframes spine { from { left: 0 } to { left: 100% } }
+.board .flow { font-size: .9cqw; letter-spacing: .22em; color: var(--dim) }
+.board .caption { position: static; width: 84%; text-align: left }
+
+/* ------------------------------------------------------------- end card --- */
+.end { position: absolute; inset: 0; display: grid; align-content: center; justify-items: center;
+  gap: 1.2cqw; text-align: center }
+.end img.f { width: 20cqw; height: auto; margin-bottom: 1cqw }
+.end h2 { margin: 0; font-family: var(--display); font-weight: normal; font-size: 2.9cqw }
+.end p { margin: 0; font-size: 1.25cqw; color: var(--grey) }
+.end hr { width: 6cqw; margin: .6cqw 0 0; border: 0; border-top: 2px solid var(--blue) }
+.end img.t { position: absolute; right: 5%; bottom: 9%; width: 9cqw; height: auto }
+
+/* --------------------------------------------------------------- motion --- */
+@media (prefers-reduced-motion: reduce) {
+  .scene, .callout, .caption.late, .caption.early,
+  .packet, .drift, .sweep, .blip, .tag, .spine i, .mark::before { animation: none }
+  .scene { opacity: 0 }
+  .scene-board { opacity: 1 }      /* hold on the board rather than loop */
+  .caption.late { opacity: 1 }
+}
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <!-- ===================================================== before ======== -->
+  <section class="scene scene-tangle" aria-label="Before float">
+    <svg class="web" viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true">
+      <g class="orbit">
+        <path d="M1085,288 A670,233 0 0 1 702,735"/> <path d="M1153,717 A434,265 0 0 1 542,362"/> <path d="M1457,506 A552,232 0 0 1 397,482"/> <path d="M1169,280 A550,156 0 0 1 139,379"/> <path d="M1033,626 A474,213 0 0 1 600,250"/> <path d="M243,340 A685,182 0 0 1 1532,366"/> <path d="M408,643 A490,206 0 0 1 1253,452"/> <path d="M1289,471 A552,222 0 0 1 274,422"/> <path d="M1075,547 A619,171 0 0 1 208,326"/> <path d="M1399,322 A589,251 0 0 1 430,602"/>
+      </g>
+      <path d="M1362,395 Q967,295 572,199"/> <path d="M1070,294 Q909,320 748,448"/> <path d="M794,162 Q965,200 1137,195"/> <path d="M794,162 Q1078,68 1362,395"/> <path d="M1231,442 Q1155,474 1079,162"/> <path d="M776,299 Q935,345 1094,572"/> <path d="M198,305 Q639,189 1079,162"/> <path d="M198,305 Q255,150 312,429"/> <path d="M684,481 Q575,253 466,490"/> <path d="M304,376 Q499,471 694,218"/> <path d="M1137,195 Q851,-14 566,285"/> <path d="M684,481 Q865,439 1045,455"/> <path d="M992,394 Q927,604 861,601"/> <path d="M694,218 Q727,448 760,575"/> <path d="M776,299 Q544,623 312,429"/> <path d="M911,567 Q1049,635 1186,407"/> <path d="M760,575 Q727,163 694,218"/> <path d="M1045,455 Q1153,483 1260,214"/> <path d="M992,394 Q595,220 198,305"/> <path d="M776,299 Q1018,88 1260,214"/> <path d="M1063,338 Q928,297 794,162"/> <path d="M370,462 Q616,477 861,601"/> <path d="M921,484 Q791,229 662,365"/> <path d="M312,429 Q308,501 304,376"/> <path d="M694,218 Q843,461 992,394"/> <path d="M992,394 Q884,461 776,299"/> <path d="M1232,257 Q902,250 572,199"/> <path d="M662,365 Q899,169 1137,195"/> <path d="M926,361 Q994,98 1063,338"/> <path d="M743,335 Q713,522 684,481"/> <path d="M1362,395 Q964,511 566,285"/> <path d="M1045,455 Q755,633 466,490"/> <path d="M1231,442 Q1111,253 992,394"/> <path d="M926,361 Q985,456 1045,455"/> <path d="M921,484 Q617,626 312,429"/> <path d="M861,601 Q583,641 304,376"/> <path d="M1094,572 Q1087,264 1079,162"/> <path d="M1231,442 Q987,296 743,335"/> <path d="M370,462 Q341,432 312,429"/> <path d="M926,361 Q860,263 794,162"/> <path d="M1186,407 Q1056,180 926,361"/> <path d="M684,481 Q716,721 748,448"/> <path d="M566,285 Q823,262 1079,162"/> <path d="M662,365 Q791,395 921,484"/> <path d="M1260,214 Q1027,51 794,162"/> <path d="M1045,455 Q679,209 312,429"/>
+      <path class="drift" d="M794,162 Q965,200 1137,195" style="--d:1.4s"/> <path class="drift" d="M304,376 Q499,471 694,218" style="--d:6.3s"/> <path class="drift" d="M1045,455 Q1153,483 1260,214" style="--d:11.9s"/> <path class="drift" d="M694,218 Q843,461 992,394" style="--d:16.8s"/> <path class="drift" d="M1045,455 Q755,633 466,490" style="--d:21.7s"/> <path class="drift" d="M370,462 Q341,432 312,429" style="--d:26.6s"/>
+    </svg>
+    <div class="tags">
+      <span class="tag" style="left:66.89%;top:32.70%;--d:2.77s">printers</span>
+      <span class="tag" style="left:41.35%;top:40.57%;--d:2.29s">embroidery</span>
+      <span class="tag" style="left:18.99%;top:41.74%;--d:4.88s">cut and sew</span>
+      <span class="tag" style="left:85.11%;top:43.84%;--d:4.14s">dye houses</span>
+      <span class="tag" style="left:66.45%;top:37.53%;--d:5.42s">blanks suppliers</span>
+      <span class="tag" style="left:78.75%;top:23.79%;--d:1.15s">ceramics</span>
+      <span class="tag" style="left:46.75%;top:49.74%;--d:2.49s">paper</span>
+      <span class="tag" style="left:46.45%;top:37.20%;--d:4.48s">metalwork</span>
+      <span class="tag" style="left:53.83%;top:66.81%;--d:4.64s">records</span>
+      <span class="tag" style="left:68.39%;top:63.50%;--d:0.35s">cds</span>
+      <span class="tag" style="left:48.50%;top:33.21%;--d:2.08s">digital</span>
+      <span class="tag" style="left:47.51%;top:63.89%;--d:0.12s">design</span>
+      <span class="tag" style="left:76.92%;top:49.13%;--d:5.74s">artwork</span>
+      <span class="tag" style="left:57.57%;top:53.76%;--d:0.26s">assets</span>
+      <span class="tag" style="left:66.57%;top:25.24%;--d:2.89s">licenses</span>
+      <span class="tag" style="left:57.85%;top:40.15%;--d:3.76s">chart registration</span>
+      <span class="tag" style="left:49.61%;top:18.00%;--d:2.98s">inventory</span>
+      <span class="tag" style="left:12.37%;top:33.91%;--d:0.89s">pick/pack</span>
+      <span class="tag" style="left:67.45%;top:18.00%;--d:3.79s">QC</span>
+      <span class="tag" style="left:29.10%;top:54.43%;--d:2.15s">barcode</span>
+      <span class="tag" style="left:74.15%;top:45.24%;--d:5.44s">storage</span>
+      <span class="tag" style="left:42.73%;top:53.40%;--d:0.43s">shipping</span>
+      <span class="tag" style="left:56.92%;top:62.97%;--d:3.70s">returns</span>
+      <span class="tag" style="left:71.03%;top:21.69%;--d:0.68s">logistics</span>
+      <span class="tag" style="left:35.38%;top:31.62%;--d:5.51s">D2C</span>
+      <span class="tag" style="left:23.11%;top:51.37%;--d:0.38s">retail</span>
+      <span class="tag" style="left:77.00%;top:28.61%;--d:1.37s">tour</span>
+      <span class="tag" style="left:35.73%;top:22.07%;--d:3.77s">popups</span>
+      <span class="tag" style="left:19.51%;top:47.62%;--d:5.69s">splits</span>
+      <span class="tag" style="left:43.35%;top:24.26%;--d:5.48s">taxes</span>
+      <span class="tag" style="left:65.33%;top:50.54%;--d:0.30s">costs</span>
+      <span class="tag" style="left:62.00%;top:43.77%;--d:5.51s">payouts</span>
+    </div>
+    <div class="hud hud-before">
+      <div><span>handoffs this week</span><b>1,284</b></div>
+      <div><span>chased by email</span><b>217</b></div>
+      <div><span>unreconciled</span><b>35</b></div>
+      <div><span>single view of it</span><b>none</b></div>
+    </div>
+    <div class="caption">
+      <span class="kicker">Before</span>
+      <h2>Hundreds of suppliers, disconnected systems, endless spreadsheets.</h2>
+      <p>Every merchandise company is dealing with hundreds of handoffs and processes
+         that no one can see or control.</p>
+    </div>
+  </section>
+
+  <!-- ==================================================== control ======== -->
+  <section class="scene scene-control" aria-label="float, air traffic control for merchandise">
+    <svg class="scope" viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true">
+      <circle class="ring" cx="800" cy="430" r="232"/>
+      <circle class="ring" cx="800" cy="430" r="153"/>
+      <circle class="ring" cx="800" cy="430" r="77"/>
+      <line x1="1021.0" y1="430.0" x2="1032.0" y2="430.0"/> <line x1="1019.3" y1="488.8" x2="1024.1" y2="490.0"/> <line x1="996.6" y1="543.5" x2="1000.9" y2="546.0"/> <line x1="956.3" y1="586.3" x2="964.0" y2="594.0"/> <line x1="913.5" y1="626.6" x2="916.0" y2="630.9"/> <line x1="858.8" y1="649.3" x2="860.0" y2="654.1"/> <line x1="800.0" y1="651.0" x2="800.0" y2="662.0"/> <line x1="741.2" y1="649.3" x2="740.0" y2="654.1"/> <line x1="686.5" y1="626.6" x2="684.0" y2="630.9"/> <line x1="643.7" y1="586.3" x2="636.0" y2="594.0"/> <line x1="603.4" y1="543.5" x2="599.1" y2="546.0"/> <line x1="580.7" y1="488.8" x2="575.9" y2="490.0"/> <line x1="579.0" y1="430.0" x2="568.0" y2="430.0"/> <line x1="580.7" y1="371.2" x2="575.9" y2="370.0"/> <line x1="603.4" y1="316.5" x2="599.1" y2="314.0"/> <line x1="643.7" y1="273.7" x2="636.0" y2="266.0"/> <line x1="686.5" y1="233.4" x2="684.0" y2="229.1"/> <line x1="741.2" y1="210.7" x2="740.0" y2="205.9"/> <line x1="800.0" y1="209.0" x2="800.0" y2="198.0"/> <line x1="858.8" y1="210.7" x2="860.0" y2="205.9"/> <line x1="913.5" y1="233.4" x2="916.0" y2="229.1"/> <line x1="956.3" y1="273.7" x2="964.0" y2="266.0"/> <line x1="996.6" y1="316.5" x2="1000.9" y2="314.0"/> <line x1="1019.3" y1="371.2" x2="1024.1" y2="370.0"/>
+      <circle cx="751.8" cy="203.1" r="3" style="--d:0.00s"/> <circle cx="711.6" cy="215.5" r="3" style="--d:0.12s"/> <circle cx="674.3" cy="235.0" r="3" style="--d:0.24s"/> <circle cx="641.2" cy="260.9" r="3" style="--d:0.36s"/> <circle cx="613.3" cy="292.3" r="3" style="--d:0.48s"/> <circle cx="591.5" cy="328.3" r="3" style="--d:0.60s"/> <circle cx="576.5" cy="367.6" r="3" style="--d:0.72s"/> <circle cx="569.0" cy="409.0" r="3" style="--d:0.84s"/> <circle cx="569.0" cy="451.0" r="3" style="--d:0.96s"/> <circle cx="576.5" cy="492.4" r="3" style="--d:1.08s"/> <circle cx="591.5" cy="531.7" r="3" style="--d:1.20s"/> <circle cx="613.3" cy="567.7" r="3" style="--d:1.32s"/> <circle cx="641.2" cy="599.1" r="3" style="--d:1.44s"/> <circle cx="674.3" cy="625.0" r="3" style="--d:1.56s"/> <circle cx="711.6" cy="644.5" r="3" style="--d:1.68s"/> <circle cx="751.8" cy="656.9" r="3" style="--d:1.80s"/> <circle cx="848.2" cy="203.1" r="3" style="--d:1.92s"/> <circle cx="888.4" cy="215.5" r="3" style="--d:2.04s"/> <circle cx="925.7" cy="235.0" r="3" style="--d:2.16s"/> <circle cx="958.8" cy="260.9" r="3" style="--d:2.28s"/> <circle cx="986.7" cy="292.3" r="3" style="--d:2.40s"/> <circle cx="1008.5" cy="328.3" r="3" style="--d:2.52s"/> <circle cx="1023.5" cy="367.6" r="3" style="--d:2.64s"/> <circle cx="1031.0" cy="409.0" r="3" style="--d:2.76s"/> <circle cx="1031.0" cy="451.0" r="3" style="--d:2.88s"/> <circle cx="1023.5" cy="492.4" r="3" style="--d:3.00s"/> <circle cx="1008.5" cy="531.7" r="3" style="--d:3.12s"/> <circle cx="986.7" cy="567.7" r="3" style="--d:3.24s"/> <circle cx="958.8" cy="599.1" r="3" style="--d:3.36s"/> <circle cx="925.7" cy="625.0" r="3" style="--d:3.48s"/> <circle cx="888.4" cy="644.5" r="3" style="--d:3.60s"/> <circle cx="848.2" cy="656.9" r="3" style="--d:3.72s"/>
+    </svg>
+    <div class="sweep" aria-hidden="true"></div>
+    <svg class="routes" viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true">
+        <path class="route" d="M430,190 Q591,197 752,203 Q775,354 778,369 L840,373 Q846,358 888,216 Q1029,218 1170,221"/>
+        <path class="packet" pathLength="1000" d="M430,190 Q591,197 752,203 Q775,354 778,369 L840,373 Q846,358 888,216 Q1029,218 1170,221" style="--d:-0.00s"/>
+        <path class="route" d="M430,283 Q536,272 641,261 Q718,373 729,385 L900,413 Q916,409 1023,368 Q1097,372 1170,376"/>
+        <path class="packet" pathLength="1000" d="M430,283 Q536,272 641,261 Q718,373 729,385 L900,413 Q916,409 1023,368 Q1097,372 1170,376" style="--d:-1.37s"/>
+        <path class="route" d="M430,345 Q511,337 591,328 Q692,396 707,403 L900,447 Q916,451 1023,492 Q1097,481 1170,469"/>
+        <path class="packet" pathLength="1000" d="M430,345 Q511,337 591,328 Q692,396 707,403 L900,447 Q916,451 1023,492 Q1097,481 1170,469" style="--d:-2.74s"/>
+        <path class="route" d="M430,438 Q499,445 569,451 Q680,437 696,436 L871,475 Q882,487 959,599 Q1064,581 1170,562"/>
+        <path class="packet" pathLength="1000" d="M430,438 Q499,445 569,451 Q680,437 696,436 L871,475 Q882,487 959,599 Q1064,581 1170,562" style="--d:-4.11s"/>
+        <path class="route" d="M430,531 Q522,549 613,568 Q703,476 716,467 L871,385 Q882,373 959,261 Q1064,272 1170,283"/>
+        <path class="packet" pathLength="1000" d="M430,531 Q522,549 613,568 Q703,476 716,467 L871,385 Q882,373 959,261 Q1064,272 1170,283" style="--d:-5.48s"/>
+        <path class="route" d="M430,593 Q552,609 674,625 Q735,496 744,482 L840,487 Q846,502 888,644 Q1029,634 1170,624"/>
+        <path class="packet" pathLength="1000" d="M430,593 Q552,609 674,625 Q735,496 744,482 L840,487 Q846,502 888,644 Q1029,634 1170,624" style="--d:-6.85s"/>
+        <path class="route" d="M430,252 Q552,243 674,235 Q735,364 744,378 L893,457 Q908,464 1009,532 Q1089,516 1170,500"/>
+        <path class="packet" pathLength="1000" d="M430,252 Q552,243 674,235 Q735,364 744,378 L893,457 Q908,464 1009,532 Q1089,516 1170,500" style="--d:-0.82s"/>
+        <path class="route" d="M430,376 Q503,372 577,368 Q684,409 700,413 L893,403 Q908,396 1009,328 Q1089,337 1170,345"/>
+        <path class="packet" pathLength="1000" d="M430,376 Q503,372 577,368 Q684,409 700,413 L893,403 Q908,396 1009,328 Q1089,337 1170,345" style="--d:-2.19s"/>
+        <path class="route" d="M430,469 Q503,481 577,492 Q684,451 700,447 L822,491 Q825,506 848,657 Q1009,656 1170,655"/>
+        <path class="packet" pathLength="1000" d="M430,469 Q503,481 577,492 Q684,451 700,447 L822,491 Q825,506 848,657 Q1009,656 1170,655" style="--d:-3.56s"/>
+        <path class="route" d="M430,624 Q571,634 712,644 Q754,502 760,487 L904,424 Q920,423 1031,409 Q1101,408 1170,407"/>
+        <path class="packet" pathLength="1000" d="M430,624 Q571,634 712,644 Q754,502 760,487 L904,424 Q920,423 1031,409 Q1101,408 1170,407" style="--d:-4.93s"/>
+        <path class="route" d="M430,314 Q522,303 613,292 Q703,384 716,393 L856,378 Q865,364 926,235 Q1048,243 1170,252"/>
+        <path class="packet" pathLength="1000" d="M430,314 Q522,303 613,292 Q703,384 716,393 L856,378 Q865,364 926,235 Q1048,243 1170,252" style="--d:-6.30s"/>
+        <path class="route" d="M430,562 Q536,581 641,599 Q718,487 729,475 L884,467 Q897,476 987,568 Q1078,549 1170,531"/>
+        <path class="packet" pathLength="1000" d="M430,562 Q536,581 641,599 Q718,487 729,475 L884,467 Q897,476 987,568 Q1078,549 1170,531" style="--d:-0.27s"/>
+    </svg>
+
+    <div class="mark">
+      <img src="assets/float-logo.webp" alt="float" width="560" height="284">
+      <span>Control</span>
+    </div>
+
+    <div class="panel panel-left">
+      <h3>Make <small>suppliers &middot; production</small></h3>
+      <ul>
+          <li><span>printers</span><em>nominal</em></li>
+          <li><span>embroidery</span><em>nominal</em></li>
+          <li><span>cut and sew</span><em>nominal</em></li>
+          <li><span>dye houses</span><em>nominal</em></li>
+          <li class=lit><span>blanks suppliers</span><em>landed</em></li>
+          <li><span>ceramics</span><em>nominal</em></li>
+          <li><span>paper</span><em>nominal</em></li>
+          <li><span>metalwork</span><em>nominal</em></li>
+          <li><span>records</span><em>nominal</em></li>
+          <li class=lit><span>cds</span><em>landed</em></li>
+          <li><span>digital</span><em>nominal</em></li>
+          <li><span>design</span><em>nominal</em></li>
+          <li><span>artwork</span><em>nominal</em></li>
+          <li class=lit><span>assets</span><em>landed</em></li>
+          <li><span>licenses</span><em>nominal</em></li>
+          <li><span>chart registration</span><em>nominal</em></li>
+      </ul>
+    </div>
+    <div class="panel panel-right">
+      <h3>Move <small>warehouse &middot; freight</small></h3>
+      <ul>
+          <li><span>inventory</span><em>nominal</em></li>
+          <li class=lit><span>pick/pack</span><em>landed</em></li>
+          <li><span>QC</span><em>nominal</em></li>
+          <li><span>barcode</span><em>nominal</em></li>
+          <li><span>storage</span><em>nominal</em></li>
+          <li class=lit><span>shipping</span><em>landed</em></li>
+          <li><span>returns</span><em>nominal</em></li>
+          <li><span>logistics</span><em>nominal</em></li>
+      </ul>
+      <h3>Sell <small>channels &middot; tour</small></h3>
+      <ul>
+          <li><span>D2C</span><em>nominal</em></li>
+          <li class=lit><span>retail</span><em>landed</em></li>
+          <li><span>tour</span><em>nominal</em></li>
+          <li class=lit><span>popups</span><em>landed</em></li>
+      </ul>
+      <h3>Settle <small>money &middot; reporting</small></h3>
+      <ul>
+          <li><span>splits</span><em>nominal</em></li>
+          <li><span>taxes</span><em>nominal</em></li>
+          <li><span>costs</span><em>nominal</em></li>
+          <li class=lit><span>payouts</span><em>landed</em></li>
+      </ul>
+    </div>
+
+    <div class="hud hud-live">
+      <span class="kicker">float &middot; live</span>
+      <div><span>drops routed</span><b>1,284</b></div>
+      <div><span>units moved</span><b>41,600</b></div>
+      <div><span>stockouts avoided</span><b>37</b></div>
+      <div><span>touched by hand</span><b>0</b></div>
+    </div>
+
+    <aside class="callout callout-1">
+      <b>float ai &middot; demand signal</b>
+      <p>Manchester sell-through 92% at 40 mins</p>
+    </aside>
+    <aside class="callout callout-2">
+      <b>float ai &middot; sequencing</b>
+      <p>Two consignments, one landing slot, spaced 40 mins</p>
+    </aside>
+    <aside class="callout callout-3">
+      <b>float ai &middot; reallocation</b>
+      <p>400 units held back from Glasgow, sent to Leeds</p>
+    </aside>
+
+    <div class="caption early">
+      <span class="kicker">float by terrible*</span>
+      <h2>Air traffic control for merchandise.</h2>
+      <p>One airspace, every cost, every shipment, every transaction, every process in one place.</p>
+    </div>
+    <div class="caption late">
+      <span class="kicker">float ai</span>
+      <h2>float doesn&rsquo;t just watch, it routes and reacts.</h2>
+      <p>Real time demand and supply, real time tracking, real time reports.</p>
+    </div>
+  </section>
+
+  <!-- ====================================================== after ======== -->
+  <section class="scene scene-board" aria-label="After float">
+    <div class="board">
+      <img src="assets/float-logo.webp" alt="float" width="560" height="284">
+      <p class="rule">ONE AIRSPACE &middot; ONE TEAM &middot; ONE SET OF NUMBERS</p>
+      <div class="chips">
+        <div class="chip"><h4>Make</h4><strong>176 partners</strong><p>artwork, production</p></div>
+        <div class="chip"><h4>Move</h4><strong>8 systems</strong><p>stock, freight, warehouse, venue door</p></div>
+        <div class="chip"><h4>Sell</h4><strong>4 channels</strong><p>D2C, retail, tour, popups</p></div>
+        <div class="chip"><h4>Settle</h4><strong>4 ledgers</strong><p>splits, taxes, costs, payouts</p></div>
+      </div>
+      <div class="spine" aria-hidden="true">
+        <i style="--d:0s"></i><i style="--d:1.8s"></i><i style="--d:3.6s"></i>
+        <i style="--d:5.4s"></i><i style="--d:7.2s"></i>
+      </div>
+      <p class="flow">ONE FLOW &middot; ARTWORK APPROVAL TO PAYOUT</p>
+      <div class="caption">
+        <span class="kicker">After</span>
+        <h2>Every transaction. Every data point. One tower.</h2>
+        <p>The same complexity, run by one team, on one platform.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- =================================================== end card ======== -->
+  <section class="scene scene-end" aria-label="float by terrible">
+    <div class="end">
+      <img class="f" src="assets/float-logo.webp" alt="float" width="560" height="284">
+      <h2>Air traffic control for merchandise.</h2>
+      <p>Every cost, every shipment, every transaction, every process in one place.</p>
+      <hr>
+      <img class="t" src="assets/terrible-logo.webp" alt="terrible*" width="422" height="92">
+    </div>
+  </section>
+
+</div>
+</body>
+</html>
