@@ -48,6 +48,29 @@ python3 animation/make-video.py --width 1920 --crf 22 \
 10 MB. `--fps` defaults to 30. Frames are kept in `dist/frames`, so `--encode-only`
 re-encodes without re-rendering.
 
+## One flat colour, one film per section
+
+`?bg=191919` swaps the gradient and grain for a single flat colour, so a frame sampled
+anywhere in the film returns exactly that value. `make-sections.py` renders the film
+once on that ground and cuts a film per section out of the same frames, each with a
+short fade from and to the ground colour so it stands on its own:
+
+```sh
+python3 animation/make-sections.py --bg 191919   # -> animation/dist/sections/
+```
+
+| File | Length |
+| --- | --- |
+| `float-01-before.mp4` | 6.3s |
+| `float-02-air-traffic-control.mp4` | 6.7s |
+| `float-03-float-ai.mp4` | 7.7s |
+| `float-04-after.mp4` | 4.1s |
+| `float-05-end-card.mp4` | 4.1s |
+| `float-full-film.mp4` | 28.2s |
+
+The cut points live in `SECTIONS` at the top of that script. Type is Nimbus Sans Becker
+PBla for the titles and Helvetica (URW Nimbus Sans, embedded) for everything else.
+
 ## Transparent overlay, titles only
 
 `index.html#overlay` runs the same animation with no ground, no flight strips, no HUD,

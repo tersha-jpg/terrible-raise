@@ -8,6 +8,18 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 fill=%27%230b0b0b%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%279%27 fill=%27none%27 stroke=%27%232c66f5%27 stroke-width=%272%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%272.5%27 fill=%27%23f4f4f1%27/%3E%3C/svg%3E">
 <style>
   @font-face {
+    /* Helvetica for every non-title word on screen. URW Nimbus Sans is metrically
+       Helvetica, and ships under a libre licence, so it can travel with the file. */
+    font-family: 'HelveticaText';
+    src: url('assets/nimbus-sans-400.woff2') format('woff2');
+    font-weight: 400; font-style: normal; font-display: block;
+  }
+  @font-face {
+    font-family: 'HelveticaText';
+    src: url('assets/nimbus-sans-700.woff2') format('woff2');
+    font-weight: 700; font-style: normal; font-display: block;
+  }
+  @font-face {
     font-family: 'Archivo';
     src: url('assets/archivo-var.woff2') format('woff2');
     font-weight: 100 900; font-style: normal; font-display: block;
@@ -96,7 +108,12 @@
 
   // titles only, transparent ground, no strips or HUD or callouts
   const OVERLAY = location.hash.includes('overlay') || location.search.includes('overlay');
+  // ?bg=191919 paints one flat colour instead of the gradient and grain
+  const BG = (new URLSearchParams(location.search).get('bg') || '').replace(/[^0-9a-f]/gi, '');
   if (OVERLAY) document.body.classList.add('overlay', 'clean');
+  if (location.hash.includes('clean') || location.search.includes('clean')) {
+    document.body.classList.add('clean');
+  }
 
   const clamp = (v,a,b) => v<a?a:v>b?b:v;
   const lerp  = (a,b,t) => a + (b-a)*t;
@@ -166,14 +183,12 @@
 
   /* -------------------------------------------------------------- typography */
   const F = {
-    // overlay titles use the supplied title face; the deck's display face otherwise
-    display: n => OVERLAY
-      ? `normal ${n}px TitleFace, 'Nimbus Sans', HelveticaNowText, Helvetica, Arial, sans-serif`
-      : `normal ${n}px HelveticaNowText, Archivo, Helvetica, Arial, sans-serif`,
-    black:   n => `900 ${n}px Archivo, "Arial Black", Helvetica, Arial, sans-serif`,
-    bold:    n => `700 ${n}px Archivo, Helvetica, Arial, sans-serif`,
-    semi:    n => `600 ${n}px Archivo, Helvetica, Arial, sans-serif`,
-    reg:     n => `400 ${n}px Archivo, Helvetica, Arial, sans-serif`
+    // titles in the supplied face, everything else in Helvetica
+    display: n => `normal ${n}px TitleFace, HelveticaNowText, Helvetica, Arial, sans-serif`,
+    black:   n => `700 ${n}px HelveticaText, Helvetica, Arial, sans-serif`,
+    bold:    n => `700 ${n}px HelveticaText, Helvetica, Arial, sans-serif`,
+    semi:    n => `700 ${n}px HelveticaText, Helvetica, Arial, sans-serif`,
+    reg:     n => `400 ${n}px HelveticaText, Helvetica, Arial, sans-serif`
   };
   function tracked(text, x, y, sp){ // letter-spaced text (canvas has no letterSpacing everywhere)
     let cx = x;
@@ -361,6 +376,7 @@
   let grainPat = null;
 
   function drawBackground(t){
+    if (BG){ ctx.fillStyle = '#' + BG; ctx.fillRect(0,0,W,H); return; }
     ctx.fillStyle = C.ink; ctx.fillRect(0,0,W,H);
     const g = ctx.createRadialGradient(CX, CY*0.6, 60, CX, CY, 1250);
     g.addColorStop(0, '#191919'); g.addColorStop(0.62, '#0c0c0c'); g.addColorStop(1, '#070707');
@@ -935,7 +951,10 @@
 
     if (!OVERLAY){
       const fade = inv(t, T.loop - 0.55, T.loop);
-      if (fade > 0){ ctx.fillStyle = `rgba(5,5,5,${fade})`; ctx.fillRect(0,0,W,H); }
+      if (fade > 0){
+        ctx.globalAlpha = fade; ctx.fillStyle = BG ? '#' + BG : '#050505';
+        ctx.fillRect(0,0,W,H); ctx.globalAlpha = 1;
+      }
     }
   }
 
@@ -982,6 +1001,8 @@
     (document.fonts ? Promise.all([
       document.fonts.load('normal 56px HelveticaNowText'),
       document.fonts.load('normal 68px TitleFace'),   // canvas will not draw an unloaded face
+      document.fonts.load('400 20px HelveticaText'),
+      document.fonts.load('700 20px HelveticaText'),
       document.fonts.load('900 20px Archivo'),
       document.fonts.load('700 15px Archivo'),
       document.fonts.load('600 15px Archivo'),
@@ -990,7 +1011,6 @@
   ]).then(([f, tl]) => {
     logoFloat = f; logoTerrible = tl;
     resize();
-    if (location.hash === '#clean' || location.search.includes('clean')) document.body.classList.add('clean');
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches){
       tNow = T.board + 1.4; setPlaying(false);
     }

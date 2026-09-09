@@ -55,6 +55,8 @@ def main() -> None:
     ap.add_argument("--out", default=str(HERE / "dist" / "float-atc.mp4"))
     ap.add_argument("--frames", default=None, help="where to keep the rendered frames")
     ap.add_argument("--crf", type=int, default=18, help="x264 quality, lower is better")
+    ap.add_argument("--bg", default=None,
+                    help="flat background colour as hex, e.g. 191919, instead of the gradient")
     ap.add_argument("--encode-only", action="store_true",
                     help="skip rendering and encode the frames already on disk")
     args = ap.parse_args()
@@ -83,7 +85,8 @@ def main() -> None:
         browser = pw.chromium.launch(executable_path=chrome)
         page = browser.new_page(viewport={"width": args.width, "height": height},
                                 device_scale_factor=1)
-        page.goto(f"http://127.0.0.1:{port}/index.html#clean")
+        query = f"?bg={args.bg.lstrip('#')}" if args.bg else ""
+        page.goto(f"http://127.0.0.1:{port}/index.html{query}#clean")
         page.wait_for_function("window.__floatAnim !== undefined", timeout=20000)
         page.wait_for_timeout(600)
         total = page.evaluate("window.__floatAnim.T.loop")
