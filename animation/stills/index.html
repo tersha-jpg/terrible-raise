@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>float stills, 16:9</title>
+<style>
+/* ============================================================================
+   Four 16:9 boards, 1920x1080, no logos: copy on the left, art on the right.
+   Same beats as the film and the social set, composed for landscape and for
+   dropping into a deck that carries its own branding.
+   ========================================================================= */
+@font-face { font-family:'Archivo'; src:url('assets/archivo-var.woff2') format('woff2');
+  font-weight:100 900; font-display:block }
+@font-face { font-family:'HelveticaNowText'; src:url('assets/helvetica-now-text.woff2') format('woff2');
+  font-weight:normal; font-display:block }
+
+:root {
+  --ink:#0b0b0b; --paper:#f4f4f1; --grey:#96968f; --dim:#4a4a46;
+  --blue:#2c66f5; --blue-lift:#6b93f8; --amber:#e0a33a;
+  --sans:Archivo, Helvetica, Arial, sans-serif;
+  --display:'HelveticaNowText', Archivo, Helvetica, Arial, sans-serif;
+}
+* { box-sizing:border-box }
+body { margin:0; background:#050505; display:flex; flex-direction:column; gap:40px;
+  padding:40px; font-family:var(--sans) }
+
+.board {
+  position:relative; width:1920px; height:1080px; padding:104px 112px;
+  display:grid; grid-template-columns:1fr 900px; gap:80px; align-items:center;
+  color:var(--paper); overflow:hidden;
+  background:radial-gradient(120% 90% at 72% 40%, #191919 0%, #0c0c0c 62%, #070707 100%);
+}
+.board::after { content:''; position:absolute; inset:0; opacity:.5; pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='0.22'/%3E%3C/svg%3E") }
+.copy, .art { position:relative; z-index:1 }
+
+.kicker { margin:0 0 34px; font-size:22px; font-weight:600; letter-spacing:.34em;
+  text-transform:uppercase; color:var(--blue) }
+h1 { margin:0; font-family:var(--display); font-weight:normal; font-size:82px;
+  line-height:1.03; letter-spacing:-.02em; text-wrap:balance }
+.sub { margin:34px 0 0; font-size:29px; line-height:1.42; color:var(--grey); max-width:660px }
+
+.art { position:relative; height:872px }
+
+/* the tangle -------------------------------------------------------------- */
+.cloud { position:absolute; inset:0 }
+.cloud svg { position:absolute; inset:0; width:100%; height:100% }
+.cloud path { fill:none; stroke:var(--blue); stroke-width:1.7; stroke-dasharray:3 7; opacity:.55 }
+.cloud .orbit path { opacity:.26 }
+.cloud span { position:absolute; transform:translate(-50%,-50%); white-space:nowrap;
+  font-size:24px; font-weight:600 }
+.cloud i { position:absolute; width:9px; height:9px; background:var(--amber);
+  transform:translate(-50%,-50%) }
+
+/* the scope --------------------------------------------------------------- */
+.scope { position:absolute; inset:0; width:100%; height:100% }
+.scope .rings circle, .scope .rings line { fill:none; stroke:var(--paper); opacity:.14;
+  stroke-width:1.6 }
+.scope .wedge { fill:var(--blue); opacity:.13 }
+.scope .route { fill:none; stroke:var(--blue); stroke-width:1.7; opacity:.3 }
+.scope .pk { fill:none; stroke:var(--paper); stroke-width:5.4; stroke-linecap:round;
+  stroke-dasharray:9 991; filter:drop-shadow(0 0 6px rgba(107,147,248,.9)) }
+.scope .blips circle { fill:var(--blue-lift) }
+.scope .hub { fill:var(--ink); fill-opacity:.9; stroke:var(--blue); stroke-width:2.4 }
+.hub-label { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  text-align:center }
+.hub-label b { display:block; font-family:var(--display); font-weight:normal; font-size:40px;
+  line-height:1 }
+.hub-label span { display:block; margin-top:10px; font-size:16px; font-weight:600;
+  letter-spacing:.36em; text-transform:uppercase; color:var(--grey) }
+
+/* callouts ---------------------------------------------------------------- */
+.calls { position:absolute; inset:0; display:grid; gap:26px; align-content:center }
+.call { padding:30px 34px; border:1.6px solid rgba(44,102,245,.85);
+  border-left:6px solid var(--blue) }
+.call b { display:block; margin-bottom:14px; font-size:18px; font-weight:600;
+  letter-spacing:.24em; text-transform:uppercase; color:var(--blue-lift) }
+.call p { margin:0; font-size:31px; font-weight:600; line-height:1.26 }
+
+/* chips ------------------------------------------------------------------- */
+.chips { position:absolute; inset:0; display:grid; grid-template-columns:1fr 1fr;
+  grid-auto-rows:300px; gap:28px; align-content:center }
+.chip { padding:40px 36px; border:1px solid #3a3a3a; border-top:3px solid var(--blue);
+  display:flex; flex-direction:column; justify-content:center }
+.chip h2 { margin:0 0 24px; font-size:20px; font-weight:600; letter-spacing:.3em;
+  text-transform:uppercase; color:var(--blue) }
+.chip strong { font-family:var(--display); font-weight:normal; font-size:58px; line-height:1 }
+.chip p { margin:20px 0 0; font-size:24px; line-height:1.34; color:var(--grey) }
+</style>
+</head>
+<body>
+
+<!-- 1 ------------------------------------------------------------ before -->
+<article class="board" id="01-before">
+  <div class="copy">
+    <p class="kicker">Before float</p>
+    <h1>Hundreds of suppliers, disconnected systems, endless spreadsheets.</h1>
+    <p class="sub">Every merchandise company is dealing with hundreds of handoffs and
+       processes that no one can see or control.</p>
+  </div>
+  <div class="art">
+    <div class="cloud">
+      <svg viewBox="0 0 900 900" preserveAspectRatio="none" aria-hidden="true">
+        <g class="orbit"><path d="M163,393 A347,330 0 0 1 826,433"/> <path d="M526,836 A317,358 0 0 1 365,146"/> <path d="M824,187 A411,349 0 0 1 403,724"/> <path d="M57,399 A403,345 0 0 1 837,507"/> <path d="M95,474 A425,383 0 0 1 943,501"/> <path d="M157,248 A400,412 0 0 1 854,392"/> <path d="M508,783 A306,385 0 0 1 208,215"/></g>
+        <path d="M805,485 Q628,403 348,100"/> <path d="M393,205 Q724,425 554,640"/> <path d="M548,737 Q165,710 138,330"/> <path d="M154,378 Q186,641 395,517"/> <path d="M578,532 Q308,333 154,378"/> <path d="M448,374 Q131,419 282,475"/> <path d="M805,485 Q670,235 398,273"/> <path d="M348,100 Q199,115 398,273"/> <path d="M448,374 Q419,350 138,330"/> <path d="M252,158 Q359,616 554,640"/> <path d="M138,330 Q291,420 252,158"/> <path d="M166,536 Q57,342 395,517"/> <path d="M619,261 Q357,180 138,330"/> <path d="M617,212 Q343,658 442,655"/> <path d="M282,475 Q305,288 726,415"/> <path d="M805,485 Q668,263 252,158"/> <path d="M614,777 Q685,614 442,655"/> <path d="M805,485 Q955,485 614,777"/> <path d="M393,205 Q526,175 736,261"/> <path d="M488,600 Q310,284 619,261"/> <path d="M138,330 Q72,24 393,205"/> <path d="M619,261 Q420,475 169,488"/> <path d="M166,536 Q286,594 614,777"/> <path d="M614,777 Q601,659 619,261"/> <path d="M548,737 Q639,246 736,261"/> <path d="M805,485 Q694,418 614,777"/> <path d="M578,532 Q710,353 674,304"/> <path d="M554,640 Q228,358 393,205"/> <path d="M154,378 Q555,548 783,587"/> <path d="M448,374 Q288,332 578,532"/> <path d="M783,587 Q566,125 348,100"/> <path d="M169,488 Q600,358 736,261"/> <path d="M189,440 Q193,437 578,532"/> <path d="M189,440 Q188,616 554,640"/> <path d="M460,705 Q478,919 614,777"/> <path d="M169,488 Q534,751 442,655"/> <path d="M488,600 Q271,566 460,705"/> <path d="M279,523 Q221,507 614,777"/>
+      </svg>
+        <span style="left:64.17%;top:59.07%">printers</span>
+        <span style="left:80.69%;top:46.06%">embroidery</span>
+        <span style="left:31.28%;top:52.73%">cut and sew</span>
+        <span style="left:44.24%;top:30.34%">dye houses</span>
+        <span style="left:68.61%;top:23.55%">ceramics</span>
+        <span style="left:56.45%;top:21.63%">paper</span>
+        <span style="left:61.59%;top:71.14%">metalwork</span>
+        <span style="left:43.72%;top:22.74%">records</span>
+        <span style="left:89.46%;top:53.88%">cds</span>
+        <span style="left:31.02%;top:58.16%">digital</span>
+        <span style="left:21.05%;top:48.84%">design</span>
+        <span style="left:68.75%;top:28.96%">artwork</span>
+        <span style="left:60.94%;top:81.91%">licenses</span>
+        <span style="left:87.04%;top:65.22%">inventory</span>
+        <span style="left:18.47%;top:59.59%">pick/pack</span>
+        <span style="left:15.37%;top:36.64%">QC</span>
+        <span style="left:49.75%;top:41.57%">barcode</span>
+        <span style="left:38.63%;top:11.13%">storage</span>
+        <span style="left:69.40%;top:18.14%">shipping</span>
+        <span style="left:68.27%;top:86.38%">returns</span>
+        <span style="left:18.75%;top:54.17%">logistics</span>
+        <span style="left:17.12%;top:42.00%">D2C</span>
+        <span style="left:43.90%;top:57.43%">retail</span>
+        <span style="left:49.17%;top:72.74%">tour</span>
+        <span style="left:28.04%;top:17.55%">popups</span>
+        <span style="left:54.25%;top:66.67%">splits</span>
+        <span style="left:74.93%;top:33.73%">taxes</span>
+        <span style="left:81.80%;top:28.99%">costs</span>
+        <span style="left:51.10%;top:78.37%">payouts</span>
+      <i style="left:33%;top:22%"></i><i style="left:71%;top:38%"></i>
+      <i style="left:45%;top:71%"></i><i style="left:24%;top:57%"></i>
+      <i style="left:79%;top:79%"></i>
+    </div>
+  </div>
+</article>
+
+<!-- 2 ----------------------------------------------------------- the tower -->
+<article class="board" id="02-tower">
+  <div class="copy">
+    <p class="kicker">One airspace</p>
+    <h1>Air traffic control for merchandise.</h1>
+    <p class="sub">One airspace, every cost, every shipment, every transaction,
+       every process in one place.</p>
+  </div>
+  <div class="art">
+      <svg class="scope" viewBox="0 0 900 900" aria-hidden="true">
+        <g class="rings">
+          <circle cx="450" cy="450" r="360"/>
+          <circle cx="450" cy="450" r="238"/>
+          <circle cx="450" cy="450" r="119"/>
+          <line x1="792.0" y1="450.0" x2="810.0" y2="450.0"/> <line x1="795.7" y1="511.0" x2="804.5" y2="512.5"/> <line x1="779.8" y1="570.0" x2="788.3" y2="573.1"/> <line x1="746.2" y1="621.0" x2="761.8" y2="630.0"/> <line x1="718.9" y1="675.6" x2="725.8" y2="681.4"/> <line x1="675.6" y1="718.9" x2="681.4" y2="725.8"/> <line x1="621.0" y1="746.2" x2="630.0" y2="761.8"/> <line x1="570.0" y1="779.8" x2="573.1" y2="788.3"/> <line x1="511.0" y1="795.7" x2="512.5" y2="804.5"/> <line x1="450.0" y1="792.0" x2="450.0" y2="810.0"/> <line x1="389.0" y1="795.7" x2="387.5" y2="804.5"/> <line x1="330.0" y1="779.8" x2="326.9" y2="788.3"/> <line x1="279.0" y1="746.2" x2="270.0" y2="761.8"/> <line x1="224.4" y1="718.9" x2="218.6" y2="725.8"/> <line x1="181.1" y1="675.6" x2="174.2" y2="681.4"/> <line x1="153.8" y1="621.0" x2="138.2" y2="630.0"/> <line x1="120.2" y1="570.0" x2="111.7" y2="573.1"/> <line x1="104.3" y1="511.0" x2="95.5" y2="512.5"/> <line x1="108.0" y1="450.0" x2="90.0" y2="450.0"/> <line x1="104.3" y1="389.0" x2="95.5" y2="387.5"/> <line x1="120.2" y1="330.0" x2="111.7" y2="326.9"/> <line x1="153.8" y1="279.0" x2="138.2" y2="270.0"/> <line x1="181.1" y1="224.4" x2="174.2" y2="218.6"/> <line x1="224.4" y1="181.1" x2="218.6" y2="174.2"/> <line x1="279.0" y1="153.8" x2="270.0" y2="138.2"/> <line x1="330.0" y1="120.2" x2="326.9" y2="111.7"/> <line x1="389.0" y1="104.3" x2="387.5" y2="95.5"/> <line x1="450.0" y1="108.0" x2="450.0" y2="90.0"/> <line x1="511.0" y1="104.3" x2="512.5" y2="95.5"/> <line x1="570.0" y1="120.2" x2="573.1" y2="111.7"/> <line x1="621.0" y1="153.8" x2="630.0" y2="138.2"/> <line x1="675.6" y1="181.1" x2="681.4" y2="174.2"/> <line x1="718.9" y1="224.4" x2="725.8" y2="218.6"/> <line x1="746.2" y1="279.0" x2="761.8" y2="270.0"/> <line x1="779.8" y1="330.0" x2="788.3" y2="326.9"/> <line x1="795.7" y1="389.0" x2="804.5" y2="387.5"/>
+        </g>
+        <path class="wedge" d="M450,450 L762,270 A360,360 0 0 1 802,525 Z"/>
+        <g class="routes">
+          <path class="route" d="M806,506 Q616,476 598,473 L314,513 Q298,521 124,602"/> <path class="route" d="M752,646 Q591,541 576,532 L308,401 Q291,395 110,333"/> <path class="route" d="M646,752 Q541,591 532,576 L382,316 Q374,300 287,129"/> <path class="route" d="M506,806 Q476,616 473,598 L494,307 Q499,289 555,106"/> <path class="route" d="M357,798 Q407,612 411,595 L581,377 Q597,369 765,275"/> <path class="route" d="M223,730 Q344,581 356,567 L463,301 Q465,283 481,91"/> <path class="route" d="M129,613 Q300,526 316,518 L563,352 Q577,340 722,214"/> <path class="route" d="M90,469 Q282,459 300,458 L600,458 Q618,459 810,469"/> <path class="route" d="M114,321 Q293,390 310,396 L552,560 Q565,573 696,713"/> <path class="route" d="M195,195 Q331,331 344,344 L447,600 Q447,618 444,810"/> <path class="route" d="M321,114 Q390,293 396,310 L573,536 Q588,546 745,656"/> <path class="route" d="M469,90 Q459,282 458,300 L479,597 Q482,615 519,803"/> <path class="route" d="M613,129 Q526,300 518,316 L368,576 Q359,591 254,752"/> <path class="route" d="M730,223 Q581,344 567,356 L304,484 Q286,488 99,531"/> <path class="route" d="M798,357 Q612,407 595,411 L321,373 Q306,363 141,265"/>
+          <path class="pk" pathLength="1000" d="M806,506 Q616,476 598,473 L314,513 Q298,521 124,602" style="stroke-dashoffset:0"/> <path class="pk" pathLength="1000" d="M752,646 Q591,541 576,532 L308,401 Q291,395 110,333" style="stroke-dashoffset:-67"/> <path class="pk" pathLength="1000" d="M646,752 Q541,591 532,576 L382,316 Q374,300 287,129" style="stroke-dashoffset:-134"/> <path class="pk" pathLength="1000" d="M506,806 Q476,616 473,598 L494,307 Q499,289 555,106" style="stroke-dashoffset:-201"/> <path class="pk" pathLength="1000" d="M357,798 Q407,612 411,595 L581,377 Q597,369 765,275" style="stroke-dashoffset:-268"/> <path class="pk" pathLength="1000" d="M223,730 Q344,581 356,567 L463,301 Q465,283 481,91" style="stroke-dashoffset:-335"/> <path class="pk" pathLength="1000" d="M129,613 Q300,526 316,518 L563,352 Q577,340 722,214" style="stroke-dashoffset:-402"/> <path class="pk" pathLength="1000" d="M90,469 Q282,459 300,458 L600,458 Q618,459 810,469" style="stroke-dashoffset:-469"/> <path class="pk" pathLength="1000" d="M114,321 Q293,390 310,396 L552,560 Q565,573 696,713" style="stroke-dashoffset:-536"/> <path class="pk" pathLength="1000" d="M195,195 Q331,331 344,344 L447,600 Q447,618 444,810" style="stroke-dashoffset:-603"/> <path class="pk" pathLength="1000" d="M321,114 Q390,293 396,310 L573,536 Q588,546 745,656" style="stroke-dashoffset:-670"/> <path class="pk" pathLength="1000" d="M469,90 Q459,282 458,300 L479,597 Q482,615 519,803" style="stroke-dashoffset:-737"/> <path class="pk" pathLength="1000" d="M613,129 Q526,300 518,316 L368,576 Q359,591 254,752" style="stroke-dashoffset:-804"/> <path class="pk" pathLength="1000" d="M730,223 Q581,344 567,356 L304,484 Q286,488 99,531" style="stroke-dashoffset:-871"/> <path class="pk" pathLength="1000" d="M798,357 Q612,407 595,411 L321,373 Q306,363 141,265" style="stroke-dashoffset:-938"/>
+        </g>
+        <g class="blips"><circle cx="808.0" cy="487.6" r="6.6" opacity="0.95"/> <circle cx="790.7" cy="566.4" r="4.4" opacity="0.32"/> <circle cx="756.2" cy="639.2" r="4.4" opacity="0.32"/> <circle cx="706.5" cy="702.6" r="6.6" opacity="0.95"/> <circle cx="643.8" cy="753.4" r="4.4" opacity="0.32"/> <circle cx="571.4" cy="788.9" r="4.4" opacity="0.32"/> <circle cx="493.0" cy="807.4" r="6.6" opacity="0.95"/> <circle cx="412.4" cy="808.0" r="4.4" opacity="0.32"/> <circle cx="333.6" cy="790.7" r="4.4" opacity="0.32"/> <circle cx="260.8" cy="756.2" r="6.6" opacity="0.95"/> <circle cx="197.4" cy="706.5" r="4.4" opacity="0.32"/> <circle cx="146.6" cy="643.8" r="4.4" opacity="0.32"/> <circle cx="111.1" cy="571.4" r="6.6" opacity="0.95"/> <circle cx="92.6" cy="493.0" r="4.4" opacity="0.32"/> <circle cx="92.0" cy="412.4" r="4.4" opacity="0.32"/> <circle cx="109.3" cy="333.6" r="6.6" opacity="0.95"/> <circle cx="143.8" cy="260.8" r="4.4" opacity="0.32"/> <circle cx="193.5" cy="197.4" r="4.4" opacity="0.32"/> <circle cx="256.2" cy="146.6" r="6.6" opacity="0.95"/> <circle cx="328.6" cy="111.1" r="4.4" opacity="0.32"/> <circle cx="407.0" cy="92.6" r="4.4" opacity="0.32"/> <circle cx="487.6" cy="92.0" r="6.6" opacity="0.95"/> <circle cx="566.4" cy="109.3" r="4.4" opacity="0.32"/> <circle cx="639.2" cy="143.8" r="4.4" opacity="0.32"/> <circle cx="702.6" cy="193.5" r="6.6" opacity="0.95"/> <circle cx="753.4" cy="256.2" r="4.4" opacity="0.32"/> <circle cx="788.9" cy="328.6" r="4.4" opacity="0.32"/> <circle cx="807.4" cy="407.0" r="6.6" opacity="0.95"/></g>
+        <circle class="hub" cx="450" cy="450" r="96"/>
+      </svg>
+    <div class="hub-label"><b>Tower</b><span>Control</span></div>
+  </div>
+</article>
+
+<!-- 3 ------------------------------------------------------------ float ai -->
+<article class="board" id="03-ai">
+  <div class="copy">
+    <p class="kicker">Routed by ai</p>
+    <h1>It doesn&rsquo;t just watch, it routes and reacts.</h1>
+    <p class="sub">Real time demand and supply, real time tracking, real time reports.</p>
+  </div>
+  <div class="art">
+    <div class="calls">
+      <div class="call"><b>Demand signal</b><p>Manchester sell-through 92% at 40 mins</p></div>
+      <div class="call"><b>Sequencing</b><p>Two consignments, one landing slot, spaced 40 mins</p></div>
+      <div class="call"><b>Reallocation</b><p>400 units held back from Glasgow, sent to Leeds</p></div>
+      <div class="call"><b>Settlement</b><p>Venue split matched, payout queued</p></div>
+    </div>
+  </div>
+</article>
+
+<!-- 4 --------------------------------------------------------------- after -->
+<article class="board" id="04-after">
+  <div class="copy">
+    <p class="kicker">After float</p>
+    <h1>Every transaction. Every data point. One tower.</h1>
+    <p class="sub">The same complexity, run by one team, on one platform.</p>
+  </div>
+  <div class="art">
+    <div class="chips">
+      <div class="chip"><h2>Make</h2><strong>176 partners</strong><p>artwork, production</p></div>
+      <div class="chip"><h2>Move</h2><strong>8 systems</strong><p>stock, freight, warehouse, venue door</p></div>
+      <div class="chip"><h2>Sell</h2><strong>4 channels</strong><p>D2C, retail, tour, popups</p></div>
+      <div class="chip"><h2>Settle</h2><strong>4 ledgers</strong><p>splits, taxes, costs, payouts</p></div>
+    </div>
+  </div>
+</article>
+
+</body>
+</html>
