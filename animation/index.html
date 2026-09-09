@@ -13,6 +13,17 @@
     font-weight: 100 900; font-style: normal; font-display: block;
   }
   @font-face {
+    /* Nimbus Sans Becker PBla: the overlay title face. Swap this file to change it;
+       the fallbacks after it in the stack are URW Nimbus Sans, then the deck's own
+       display face. */
+    font-family: 'TitleFace';
+    src: url('assets/title-font.woff2') format('woff2'),
+         url('assets/title-font.ttf') format('truetype');
+    /* the range keeps any requested weight mapping to this single cut, so nothing
+       gets synthetically emboldened */
+    font-weight: 100 900; font-style: normal; font-display: block;
+  }
+  @font-face {
     font-family: 'HelveticaNowText';
     src: url('assets/helvetica-now-text.woff2') format('woff2');
     font-weight: normal; font-style: normal; font-display: block;
@@ -51,6 +62,8 @@
   body.clean #controls, body.clean #hint { display: none; }
   body.clean { padding: 0; background: var(--ink); }
   body.clean #stage { max-width: none; height: 100vh; width: 100vw; box-shadow: none; }
+  /* overlay render: nothing paints a ground, so the frames carry alpha */
+  body.overlay, body.overlay #stage { background: transparent; box-shadow: none; }
 </style>
 </head>
 <body>
@@ -80,6 +93,10 @@
     ink:'#0b0b0b', paper:'#f4f4f1', grey:'#96968f', dim:'#4a4a46',
     blue:'#2c66f5', blue2:'#6b93f8', amber:'#e0a33a', red:'#d1483c', line:'#262626'
   };
+
+  // titles only, transparent ground, no strips or HUD or callouts
+  const OVERLAY = location.hash.includes('overlay') || location.search.includes('overlay');
+  if (OVERLAY) document.body.classList.add('overlay', 'clean');
 
   const clamp = (v,a,b) => v<a?a:v>b?b:v;
   const lerp  = (a,b,t) => a + (b-a)*t;
@@ -149,7 +166,10 @@
 
   /* -------------------------------------------------------------- typography */
   const F = {
-    display: n => `normal ${n}px HelveticaNowText, Archivo, Helvetica, Arial, sans-serif`,
+    // overlay titles use the supplied title face; the deck's display face otherwise
+    display: n => OVERLAY
+      ? `normal ${n}px TitleFace, 'Nimbus Sans', HelveticaNowText, Helvetica, Arial, sans-serif`
+      : `normal ${n}px HelveticaNowText, Archivo, Helvetica, Arial, sans-serif`,
     black:   n => `900 ${n}px Archivo, "Arial Black", Helvetica, Arial, sans-serif`,
     bold:    n => `700 ${n}px Archivo, Helvetica, Arial, sans-serif`,
     semi:    n => `600 ${n}px Archivo, Helvetica, Arial, sans-serif`,
@@ -365,7 +385,7 @@
 
   // where a node's label sits at time t (chaos -> flight strip)
   function nodePos(n, t){
-    const mix = eio(inv(t, T.tidy + (n.i / nodes.length) * 1.4, T.scope + 0.15));
+    const mix = OVERLAY ? 0 : eio(inv(t, T.tidy + (n.i / nodes.length) * 1.4, T.scope + 0.15));
     const jx = n.cx0 + Math.sin(t * n.jitS + n.jit) * 7 * (1-mix);
     const jy = n.cy0 + Math.cos(t * n.jitS * 0.8 + n.jit) * 6 * (1-mix);
     const arc = Math.sin(mix * Math.PI) * (n.side === 'L' ? -60 : 60);
@@ -428,12 +448,12 @@
     ctx.globalAlpha = a;
 
     // rings
-    ctx.strokeStyle = 'rgba(244,244,241,0.10)'; ctx.lineWidth = 1;
+    ctx.strokeStyle = OVERLAY ? 'rgba(255,255,255,0.34)' : 'rgba(244,244,241,0.10)'; ctx.lineWidth = 1;
     for (const r of [R_SCOPE, R_SCOPE*0.66, R_SCOPE*0.33]){
       ctx.beginPath(); ctx.arc(CX, CY, r, 0, TAU); ctx.stroke();
     }
     // range ticks
-    ctx.strokeStyle = 'rgba(244,244,241,0.13)';
+    ctx.strokeStyle = OVERLAY ? 'rgba(255,255,255,0.38)' : 'rgba(244,244,241,0.13)';
     for (let d = 0; d < 360; d += 7.5){
       const rad = d * Math.PI/180, long = d % 30 === 0;
       const r1 = R_SCOPE - (long ? 13 : 6), r2 = R_SCOPE;
@@ -483,6 +503,7 @@
       const w = 128, h = w * (logoFloat.naturalHeight / logoFloat.naturalWidth);
       ctx.drawImage(logoFloat, CX - w/2, CY - h/2 - 6, w, h);
     }
+    if (OVERLAY){ ctx.restore(); return; }
     ctx.font = F.semi(13); ctx.fillStyle = C.grey; ctx.textAlign = 'left';
     const label = 'CONTROL';
     const wlab = trackedWidth(label, 4.2);
@@ -603,7 +624,7 @@
   }
 
   function drawPanels(t, a){
-    if (a <= 0.01) return;
+    if (a <= 0.01 || OVERLAY) return;
     ctx.save(); ctx.globalAlpha = a; ctx.textAlign = 'left';
     const groups = [['make','L'],['move','R'],['sell','R'],['settle','R']];
     for (const [key, side] of groups){
@@ -643,7 +664,7 @@
       const lit = state ? 1 : 0;
 
       // strip chrome
-      if (mix > 0.02){
+      if (mix > 0.02 && !OVERLAY){
         ctx.globalAlpha = GA * mix;
         ctx.fillStyle = lit ? C.blue : 'rgba(244,244,241,0.22)';
         ctx.fillRect(p.x + (mix < 1 ? 0 : 0), p.y - 6, 6, 6);
@@ -668,6 +689,7 @@
 
   /* --------------------------------------------------------------------- HUD */
   function drawHUD(t){
+    if (OVERLAY) return;
     const chaosA = 1 - inv(t, T.tidy - 0.2, T.tidy + 1.0);
     const floatA = inv(t, T.scope - 0.8, T.flow + 0.2) * (1 - inv(t, T.board, T.board + 0.8));
     ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
@@ -710,6 +732,7 @@
 
   /* ---------------------------------------------------------------- callouts */
   function drawCallouts(t){
+    if (OVERLAY) return;
     for (const co of CALLOUTS){
       const a = Math.min(inv(t, co.t0, co.t0 + 0.35), 1 - inv(t, co.t0 + co.dur - 0.4, co.t0 + co.dur));
       if (a <= 0.01) continue;
@@ -773,15 +796,20 @@
       ctx.save(); ctx.globalAlpha = a;
       const rise = (1 - eo(inv(t, cp.t0, cp.t0 + 0.7))) * 18;
       const x = 96, lines = cp.head.split('\n');
-      const subY = 1012 + rise, lastLine = subY - 46;
-      let y = lastLine - (lines.length - 1) * 58;
+      const subY = 1012 + rise, lh = OVERLAY ? 70 : 58;
+      const lastLine = OVERLAY ? 986 + rise : subY - 46;
+      let y = lastLine - (lines.length - 1) * lh;
       ctx.textAlign = 'left';
-      ctx.font = F.semi(14); ctx.fillStyle = C.blue;
-      tracked(cp.kicker.toUpperCase(), x, y - 60, 4.4);
-      ctx.fillStyle = C.paper; ctx.font = F.display(56);
-      for (const line of lines){ ctx.fillText(line, x, y); y += 58; }
-      ctx.font = F.reg(21); ctx.fillStyle = C.grey;
-      ctx.fillText(cp.sub, x, subY);
+      if (!OVERLAY){
+        ctx.font = F.semi(14); ctx.fillStyle = C.blue;
+        tracked(cp.kicker.toUpperCase(), x, y - 60, 4.4);
+      }
+      ctx.fillStyle = OVERLAY ? '#ffffff' : C.paper; ctx.font = F.display(OVERLAY ? 68 : 56);
+      for (const line of lines){ ctx.fillText(line, x, y); y += lh; }
+      if (!OVERLAY){
+        ctx.font = F.reg(21); ctx.fillStyle = C.grey;
+        ctx.fillText(cp.sub, x, subY);
+      }
       ctx.restore();
     }
   }
@@ -807,10 +835,12 @@
       ctx.textAlign = 'left';
       ctx.font = F.semi(13); ctx.fillStyle = C.blue;
       tracked(ch.key.toUpperCase(), x + 28, yy + 40, 4.4);
-      ctx.font = F.display(44); ctx.fillStyle = C.paper;
+      ctx.font = F.display(44); ctx.fillStyle = OVERLAY ? '#ffffff' : C.paper;
       ctx.fillText(ch.n, x + 28, yy + 106);
-      ctx.font = F.reg(18); ctx.fillStyle = C.grey;
-      wrapText(ch.line, x + 28, yy + 142, wBox - 56, 24);
+      if (!OVERLAY){
+        ctx.font = F.reg(18); ctx.fillStyle = C.grey;
+        wrapText(ch.line, x + 28, yy + 142, wBox - 56, 24);
+      }
       ctx.fillStyle = C.blue;
       ctx.beginPath(); ctx.arc(x + wBox - 30, yy + 34, 4.5, 0, TAU); ctx.fill();
     });
@@ -819,10 +849,13 @@
       const lw = 150, lh = lw * (logoFloat.naturalHeight / logoFloat.naturalWidth);
       ctx.drawImage(logoFloat, W/2 - lw/2, 176, lw, lh);
     }
-    ctx.font = F.semi(14); ctx.fillStyle = C.grey; ctx.textAlign = 'left';
-    const s = 'ONE AIRSPACE · ONE TEAM · ONE SET OF NUMBERS';
-    tracked(s, W/2 - trackedWidth(s, 4.2)/2, y - 44, 4.2);
+    if (!OVERLAY){
+      ctx.font = F.semi(14); ctx.fillStyle = C.grey; ctx.textAlign = 'left';
+      const s = 'ONE AIRSPACE · ONE TEAM · ONE SET OF NUMBERS';
+      tracked(s, W/2 - trackedWidth(s, 4.2)/2, y - 44, 4.2);
+    }
 
+    if (OVERLAY){ ctx.restore(); return; }
     // one flow, still running underneath it
     const spineY = y + hBox + 66, xA = x0 + 90, xB = x0 + wBox*4 + gap*3 - 90;
     ctx.strokeStyle = 'rgba(244,244,241,0.16)'; ctx.lineWidth = 1;
@@ -859,13 +892,15 @@
       ctx.drawImage(logoFloat, W/2 - w/2, 372 + rise, w, h);
     }
     ctx.textAlign = 'center';
-    ctx.font = F.display(52); ctx.fillStyle = C.paper;
+    ctx.font = F.display(OVERLAY ? 62 : 52); ctx.fillStyle = OVERLAY ? '#ffffff' : C.paper;
     ctx.fillText('Air traffic control for merchandise.', W/2, 640 + rise);
-    ctx.font = F.reg(23); ctx.fillStyle = C.grey;
-    ctx.fillText('Every cost, every shipment, every transaction, every process in one place.', W/2, 686 + rise);
-    ctx.strokeStyle = C.blue; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(W/2 - 60, 726 + rise); ctx.lineTo(W/2 + 60, 726 + rise); ctx.stroke();
-    if (logoTerrible && logoTerrible.complete){
+    if (!OVERLAY){
+      ctx.font = F.reg(23); ctx.fillStyle = C.grey;
+      ctx.fillText('Every cost, every shipment, every transaction, every process in one place.', W/2, 686 + rise);
+      ctx.strokeStyle = C.blue; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(W/2 - 60, 726 + rise); ctx.lineTo(W/2 + 60, 726 + rise); ctx.stroke();
+    }
+    if (!OVERLAY && logoTerrible && logoTerrible.complete){
       const w = 176, h = w * (logoTerrible.naturalHeight / logoTerrible.naturalWidth);
       ctx.drawImage(logoTerrible, W - 96 - w, H - 96 - h, w, h);
     }
@@ -876,7 +911,7 @@
   /* ------------------------------------------------------------------ render */
   function render(t){
     frame();
-    drawBackground(t);
+    if (!OVERLAY) drawBackground(t);
     const gone   = 1 - inv(t, T.end - 0.6, T.end);
     const tangle = (1 - inv(t, T.tidy + 0.4, T.tidy + 2.2)) * gone;
     const alive  = (1 - inv(t, T.board, T.board + 1.0) * 0.982) * gone;
@@ -888,7 +923,7 @@
     drawTower(t, inv(t, T.scope - 2.0, T.scope - 0.7) * alive);
     drawPanels(t, inv(t, T.scope - 1.7, T.scope - 0.3) * alive);
 
-    ctx.save(); GA = Math.max(tangle, alive); ctx.globalAlpha = GA;
+    ctx.save(); GA = OVERLAY ? tangle : Math.max(tangle, alive); ctx.globalAlpha = GA;
     drawNodes(t);
     GA = 1; ctx.restore();
 
@@ -898,8 +933,10 @@
     drawBoard(t);
     drawEnd(t);
 
-    const fade = inv(t, T.loop - 0.55, T.loop);
-    if (fade > 0){ ctx.fillStyle = `rgba(5,5,5,${fade})`; ctx.fillRect(0,0,W,H); }
+    if (!OVERLAY){
+      const fade = inv(t, T.loop - 0.55, T.loop);
+      if (fade > 0){ ctx.fillStyle = `rgba(5,5,5,${fade})`; ctx.fillRect(0,0,W,H); }
+    }
   }
 
   /* ---------------------------------------------------------------- playback */
@@ -944,6 +981,7 @@
     loadImage('assets/terrible-logo.webp'),
     (document.fonts ? Promise.all([
       document.fonts.load('normal 56px HelveticaNowText'),
+      document.fonts.load('normal 68px TitleFace'),   // canvas will not draw an unloaded face
       document.fonts.load('900 20px Archivo'),
       document.fonts.load('700 15px Archivo'),
       document.fonts.load('600 15px Archivo'),

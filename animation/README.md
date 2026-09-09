@@ -48,6 +48,39 @@ python3 animation/make-video.py --width 1920 --crf 22 \
 10 MB. `--fps` defaults to 30. Frames are kept in `dist/frames`, so `--encode-only`
 re-encodes without re-rendering.
 
+## Transparent overlay, titles only
+
+`index.html#overlay` runs the same animation with no ground, no flight strips, no HUD,
+no callouts, no kickers and no sub-lines: the white titles, the tangle, the scope, the
+traffic and the figures, over alpha. Titles are set in Nimbus Sans Becker PBla, from
+`assets/title-font.woff2` (the `.ttf` is next to it); swap that file to change the face,
+and the stack falls back to URW Nimbus Sans and then Helvetica Now Text.
+
+```sh
+python3 animation/make-overlay.py                    # webm + PNG-in-MOV master
+python3 animation/make-overlay.py --master prores    # ProRes 4444 instead, 1.07 GB
+```
+
+| Output | Size | For |
+| --- | --- | --- |
+| `float-atc-overlay.webm` | 26 MB | a web page, over any background |
+| `float-atc-overlay.mov` | 200 MB | Premiere, After Effects, Resolve. PNG in QuickTime, lossless alpha |
+
+On a page:
+
+```html
+<video autoplay muted loop playsinline
+       style="width:100%; height:auto; display:block"
+       aria-label="float, air traffic control for merchandise">
+  <source src="float-atc-overlay.webm" type="video/webm">
+</video>
+```
+
+Two things worth knowing. `ffprobe` reports the WebM as `yuv420p` and ffmpeg's own
+decoder ignores its alpha plane, but browsers composite it correctly, so trust the
+browser rather than the probe. And the artwork is white and pale blue: it reads over
+dark and mid grounds, and disappears over a light one.
+
 ## Putting it on a website
 
 Two ways, depending on whether the page should run the animation or play a file.
