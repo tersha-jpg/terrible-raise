@@ -101,6 +101,8 @@ def main():
     ap.add_argument("--width", type=int, default=1920)
     ap.add_argument("--crf", type=int, default=18)
     ap.add_argument("--fade", type=float, default=0.35)
+    ap.add_argument("--end", type=float, default=24.4,
+                    help="where the full film stops; 28.2 keeps the end card on it")
     ap.add_argument("--out-dir", default=str(HERE / "dist" / "sections"))
     ap.add_argument("--encode-only", action="store_true")
     args = ap.parse_args()
@@ -121,8 +123,9 @@ def main():
     for name, start, end in SECTIONS:
         encode(ffmpeg, frames_dir, out_dir / f"float-{name}.mp4",
                args.fps, start, end, bg, args.fade, args.crf)
+    # the film ends on the after board: the end card is kept as its own clip, for later
     encode(ffmpeg, frames_dir, out_dir / "float-full-film.mp4",
-           args.fps, 0.0, 28.2, bg, args.fade, args.crf)
+           args.fps, 0.0, args.end, bg, args.fade, args.crf)
     print(out_dir)
 
 

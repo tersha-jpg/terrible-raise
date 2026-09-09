@@ -66,7 +66,10 @@ python3 animation/make-sections.py --bg 191919   # -> animation/dist/sections/
 | `float-03-float-ai.mp4` | 7.7s |
 | `float-04-after.mp4` | 4.1s |
 | `float-05-end-card.mp4` | 4.1s |
-| `float-full-film.mp4` | 28.2s |
+| `float-full-film.mp4` | 24.4s, ending on the after board |
+
+The full film stops at the after board: the end card is held back for later, and lives
+on as its own clip. `--end 28.2` puts it back on the film.
 
 The cut points live in `SECTIONS` at the top of that script. Type is Nimbus Sans Becker
 PBla for the titles and Helvetica (URW Nimbus Sans, embedded) for everything else.

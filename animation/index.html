@@ -930,7 +930,7 @@
     if (!OVERLAY) drawBackground(t);
     const gone   = 1 - inv(t, T.end - 0.6, T.end);
     const tangle = (1 - inv(t, T.tidy + 0.4, T.tidy + 2.2)) * gone;
-    const alive  = (1 - inv(t, T.board, T.board + 1.0) * 0.982) * gone;
+    const alive  = (1 - inv(t, T.board, T.board + 1.0)) * gone;
 
     drawTangle(t, tangle);
     drawClaim(t);
