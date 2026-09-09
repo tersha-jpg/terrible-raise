@@ -11,9 +11,10 @@ wanted instead of the film.
 | `03-ai.png` | Four float ai findings. It doesn't just watch, it routes and reacts. |
 | `04-after.png` | 176 partners, 8 systems, 4 channels, 4 ledgers. |
 
-No float or terrible* mark anywhere, so `02-tower` labels its hub **Tower / Control**
-in type rather than sitting the wordmark in the middle of the scope. If you want the
-mark back on that board, replace the `.hub-label` markup with the logo `<img>`.
+No terrible* mark and no footer logos. The one exception is `02-tower`, where the float
+mark sits at the centre of the scope as the tower itself, with `Control` beneath it. It
+has no plate behind it: the routes turn on a radius of 186 units and the sweep is drawn
+as a ring segment rather than a full pie, so nothing runs under the mark.
 
 ## Rebuild
 
