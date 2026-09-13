@@ -71,6 +71,20 @@ python3 animation/make-sections.py --bg 191919   # -> animation/dist/sections/
 The full film stops at the after board: the end card is held back for later, and lives
 on as its own clip. `--end 28.2` puts it back on the film.
 
+For a presentation screen, render the same film at 4K. Everything is drawn from vectors
+and text, so this is real detail rather than an upscale:
+
+```sh
+python3 animation/make-sections.py --bg 191919 --width 3840 --jpeg 0.98 \
+        --crf 16 --only-full --suffix=-4k --out-dir animation/dist/hires
+```
+
+| File | Size | For |
+| --- | --- | --- |
+| `float-full-film-4k.mp4` | 3840 x 2160, 26 MB | a 4K screen or projector |
+| `float-full-film-1440.mp4` | 2560 x 1440, 14 MB | a laptop that might stutter on 4K |
+| `float-full-film.mp4` | 1920 x 1080, 8 MB | everything else |
+
 The cut points live in `SECTIONS` at the top of that script. Type is Nimbus Sans Becker
 PBla for the titles and Helvetica (URW Nimbus Sans, embedded) for everything else.
 

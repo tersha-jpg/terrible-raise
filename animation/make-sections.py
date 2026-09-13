@@ -48,7 +48,7 @@ def ffmpeg_binary():
         return None
 
 
-def render(frames_dir, width, fps, bg):
+def render(frames_dir, width, fps, bg, jpeg=0.96):
     from playwright.sync_api import sync_playwright
 
     height = round(width * 9 / 16)
@@ -70,7 +70,8 @@ def render(frames_dir, width, fps, bg):
         import base64
         for i in range(count):
             page.evaluate(f"window.__floatAnim.seek({i / fps})")
-            data = page.evaluate("document.querySelector('#c').toDataURL('image/jpeg', 0.96)")
+            data = page.evaluate(
+                f"document.querySelector('#c').toDataURL('image/jpeg', {jpeg})")
             (frames_dir / f"f{i:05d}.jpg").write_bytes(base64.b64decode(data.split(",", 1)[1]))
             if i % 120 == 0:
                 print(f"  {i}/{count}")
@@ -105,6 +106,10 @@ def main():
                     help="where the full film stops; 28.2 keeps the end card on it")
     ap.add_argument("--out-dir", default=str(HERE / "dist" / "sections"))
     ap.add_argument("--encode-only", action="store_true")
+    ap.add_argument("--only-full", action="store_true",
+                    help="encode just the full film, not the per-section cuts")
+    ap.add_argument("--jpeg", type=float, default=0.96, help="frame capture quality")
+    ap.add_argument("--suffix", default="", help="appended to every output filename")
     args = ap.parse_args()
 
     ffmpeg = ffmpeg_binary()
@@ -117,14 +122,15 @@ def main():
     frames_dir.mkdir(exist_ok=True)
 
     if not args.encode_only:
-        render(frames_dir, args.width, args.fps, bg)
+        render(frames_dir, args.width, args.fps, bg, args.jpeg)
 
     print("encoding")
-    for name, start, end in SECTIONS:
-        encode(ffmpeg, frames_dir, out_dir / f"float-{name}.mp4",
-               args.fps, start, end, bg, args.fade, args.crf)
+    if not args.only_full:
+        for name, start, end in SECTIONS:
+            encode(ffmpeg, frames_dir, out_dir / f"float-{name}{args.suffix}.mp4",
+                   args.fps, start, end, bg, args.fade, args.crf)
     # the film ends on the after board: the end card is kept as its own clip, for later
-    encode(ffmpeg, frames_dir, out_dir / "float-full-film.mp4",
+    encode(ffmpeg, frames_dir, out_dir / f"float-full-film{args.suffix}.mp4",
            args.fps, 0.0, args.end, bg, args.fade, args.crf)
     print(out_dir)
 
